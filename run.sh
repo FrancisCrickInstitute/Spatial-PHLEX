@@ -2,7 +2,7 @@
 #SBATCH --partition=cpu
 #SBATCH --ntasks 1
 #SBATCH --mem 64GB
-#SBATCH --time 6:00:0
+#SBATCH --time 12:00:0
 #SBATCH --job-name pipe
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
