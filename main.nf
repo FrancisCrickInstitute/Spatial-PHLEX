@@ -1,5 +1,6 @@
 #!/usr/bin/env nextflow
 
+
 /*
  * GRAPH ANALYSIS CONFIG PARAMETERS
  */
@@ -10,41 +11,27 @@ params.neighbourhood_module_no = 865
 params.md_cuda = "CUDA/10.1.105"
 params.md_conda = "Anaconda3" 
 params.graph_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-0.18"
-params.publish_dir_mode = 'copy'
-params.outdir = '../results'
-project_dir = projectDir
-params.imagenames = './inventory/p2_tumour_communities_imagenames.csv' //redirect to inventory
-params.RELEASE = 'release_2022_02_09'
+params.RELEASE = '2022_02_09_release'
 
 /*
  * SPATIAL CLUSTERING CONFIG PARAMETERS
  */
-// params.METADATA = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'
 
-params.spclust_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/tf"
-
-
-// // # EPS density parameter:
-// params.EPS = 25
-
-// // # minimum samples for clustering
-// params.MIN_S = 0
-
-// // # alphashape curvature parameter:
-// params.ALPHA = 0.05  
-
-// params.RELEASE_VERSION = '2021-09-25_release'
-
-// // # base output directory:
-// params.ROOT_OUT_DIR = '../../results/single_cell_assignment/{}/{}/{}/{}/dbscan_{}/min_size_{}/alpha_{}'.format(params.RELEASE_VERSION, params.COHORT, params.PANEL, params.PHENOTYPING_LEVEL, params.EPS, params.MIN_S, params.ALPHA)
 params.COHORT = 'tx100'
 params.PANEL = 'p1'
-params.PHENOTYPING_LEVEL = 'neighborhood10' //'cellType'
-params.OBJECTS = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt'
+params.OBJECTS = "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_${params.PANEL}.txt"
+params.md_conda = "Anaconda3" 
+params.spclust_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/tf"
 
+// Pipeline execution parameters:
 params.dev = false
 params.number_of_inputs = 2
+params.publish_dir_mode = 'copy'
+params.outdir = '../results'
+project_dir = projectDir
 
+// directly create a list channel for phenotyping levels for combinatoric input of phenotype levels and imagenames
+ch_phenotyping = Channel.fromList(['cellType', 'majorType'])
 
 // channel for neighbourhood input csv files
 if (params.neighborhood_input) {
@@ -58,8 +45,9 @@ if (params.neighborhood_input) {
    exit 1, "Neighbourhood input file not specified!"
 }
 
-ch_panels = Channel.value('p2')
-ch_phenotyping = Channel.fromList(['cellType', 'majorType'])
+/*****************
+* BEGIN PIPELINE *
+*****************/
 
 process GENERATE_IMAGENAMES {
 
@@ -124,7 +112,7 @@ process GRAPH_BARRIER {
 
     echo true
 
-    publishDir "${params.outdir}/graph/barrier", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${params.RELEASE}/graph/barrier", mode: params.publish_dir_mode
 
     input:
     val adj_list from adj_output_ch
@@ -145,27 +133,35 @@ process GRAPH_BARRIER {
 //     pat
 // }
 
-// process SPATIAL_CLUSTERING {
+process SPATIAL_CLUSTERING {
+    /*
+    Perform spatial clustering of cell positions.
+    */
 
-//     executor "slurm"
-// 	time "0.5h"
-// 	clusterOptions "--part=cpu --cpus-per-task=4 --mem=2GB"
+    executor "slurm"
+	time "0.5h"
+	clusterOptions "--part=cpu --cpus-per-task=4 --mem=2GB"
 
-//     module params.md_conda
-//     conda params.spclust_conda_env
+    module params.md_conda
+    conda params.spclust_conda_env
 
-//     echo true
+    echo true
 
-//     publishDir "${params.outdir}", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${params.RELEASE}/spatial_clustering", mode: params.publish_dir_mode
 
-//     input:
-//     val imagename from ch_imagenames
+    input:
+    tuple imagename, level from ch_imagenames.splitText().map{x -> x.trim()}.combine(ch_phenotyping) //split imagenames and remove trailing newline; create a tuple with channel of phenotyping levels
 
-//     """
-//     single_cell_spatial_cluster_assignment.py $imagename ${params.COHORT} ${params.PANEL} ${params.PHENOTYPING_LEVEL} ${params.OBJECTS}
-//     """
+    output:
+    file "**/*cluster_assignment.csv" optional true into ch_spclusters
+    file "**/*wkt.csv" optional true into ch_wkts
+    file "**/*.png" optional true into ch_cluster_plots
 
-// }
+    """
+    single_cell_spatial_cluster_assignment.py $imagename ${params.COHORT} ${params.PANEL} $level ${params.OBJECTS}
+    """
+
+}
 
 // process DICE {
 

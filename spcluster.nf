@@ -33,7 +33,7 @@ process GENERATE_IMAGENAMES {
     for imagename in imagenames:
         print(imagename)
         i += 1
-        if i > 5:
+        if i > 1:
             break 
     """
 
@@ -58,9 +58,9 @@ process SPATIAL_CLUSTERING {
     tuple imagename, level from ch_imagenames.splitText().map{x -> x.trim()}.combine(ch_phenotyping) //.take(5) //split imagenames and remove trailing newline
 
     output:
-    path '**/*cluster_assignment.csv' optional true into ch_spclusters
-    path '**/*wkt.csv' optional true into ch_wkts
-    path '**/*.png' optional true into ch_cluster_plots
+    file "**/*cluster_assignment.csv" optional true into ch_spclusters
+    file "**/*wkt.csv" optional true into ch_wkts
+    file "**/*.png" optional true into ch_cluster_plots
 
     """
     single_cell_spatial_cluster_assignment.py $imagename ${params.COHORT} ${params.PANEL} $level ${params.OBJECTS}
@@ -68,22 +68,22 @@ process SPATIAL_CLUSTERING {
 
 }
 
-process CONCAT_CLUSTERS {
+// process CONCAT_CLUSTERS {
 
-    /*
-    Generate imagenames from the cell objects file. 
-    */
+//     /*
+//     Generate imagenames from the cell objects file. 
+//     */
 
-    publishDir "${params.outdir}/${params.RELEASE}/spatial_clustering", mode: params.publish_dir_mode
+//     publishDir "${params.outdir}/${params.RELEASE}/spatial_clustering", mode: params.publish_dir_mode
 
-    input: 
-    file '*.csv' from ch_spclusters.toList()
+//     input: 
+//     file '*.csv' from ch_spclusters.toList()
     
-    output:
-    file 'result.txt'
+//     output:
+//     file 'result.txt'
     
-    """
-    cat *.csv > result.csv
-    """ 
+//     """
+//     cat *.csv > result.csv
+//     """ 
 
-}
+// }

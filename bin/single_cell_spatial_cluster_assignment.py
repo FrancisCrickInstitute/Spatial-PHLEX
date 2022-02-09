@@ -54,7 +54,7 @@ class config(object):
         self.RELEASE_VERSION = '2022-02-02_release'
 
         # base output directory:
-        self.ROOT_OUT_DIR = '../../results/single_cell_assignment/{}/{}/{}/{}/dbscan_{}/min_size_{}/alpha_{}'.format(self.RELEASE_VERSION, self.COHORT, self.PANEL, self.PHENOTYPING_LEVEL, self.EPS, self.MIN_S, self.ALPHA)
+        self.ROOT_OUT_DIR = './single_cell_assignment/{}/{}/{}/dbscan_{}/min_size_{}/alpha_{}'.format(self.COHORT, self.PANEL, self.PHENOTYPING_LEVEL, self.EPS, self.MIN_S, self.ALPHA)
 
         
 
