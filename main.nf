@@ -14,6 +14,7 @@ params.publish_dir_mode = 'copy'
 params.outdir = '../results'
 project_dir = projectDir
 params.imagenames = './inventory/p2_tumour_communities_imagenames.csv' //redirect to inventory
+params.RELEASE = 'release_2022_02_09'
 
 /*
  * SPATIAL CLUSTERING CONFIG PARAMETERS
@@ -44,11 +45,6 @@ params.OBJECTS = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx
 params.dev = false
 params.number_of_inputs = 2
 
-Channel
-    .fromPath(params.imagenames)
-    .splitCsv(header:true)
-    .map{ row->row.imagename }
-    .set { ch_imagenames }
 
 // channel for neighbourhood input csv files
 if (params.neighborhood_input) {
@@ -65,25 +61,29 @@ if (params.neighborhood_input) {
 ch_panels = Channel.value('p2')
 ch_phenotyping = Channel.fromList(['cellType', 'majorType'])
 
-// process GENERATE_IMAGENAMES {
+process GENERATE_IMAGENAMES {
 
-//     module params.md_conda
-//     conda params.spclust_conda_env
+    /*
+    Generate unique imagenames from the cell objects file. 
+    */
 
-//     output:
-//     stdout into ch_imagenames_2
+    module params.md_conda
+    conda params.spclust_conda_env
+
+    output:
+    stdout into ch_imagenames
  
-//     """
-//     #!/usr/bin/env python
-//     import pandas as pd
+    """
+    #!/usr/bin/env python
+    import pandas as pd
  
-//     objects = pd.read_csv('${params.OBJECTS}', sep='\t', encoding='latin1')
-//     imagenames = objects['imagename'].unique().tolist()
-//     for imagename in imagenames:
-//         print(imagename)
-//     """
+    objects = pd.read_csv('${params.OBJECTS}', sep='\t', encoding='latin1')
+    imagenames = objects['imagename'].unique().tolist()
+    for imagename in imagenames:
+        print(imagename)
+    """
 
-// }
+}
 
 process NEIGHBOURHOOD_GRAPH {
     /*
@@ -97,7 +97,7 @@ process NEIGHBOURHOOD_GRAPH {
     module params.md_conda
     conda params.spclust_conda_env
 
-    publishDir "${params.outdir}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${params.RELEASE}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode
 
     input:
     val nhood_file from ch_nhood
@@ -111,6 +111,9 @@ process NEIGHBOURHOOD_GRAPH {
 }
 
 process GRAPH_BARRIER {
+    /*
+    Run graph barrier scoring for all cell types.
+    */
 
     executor "slurm"
 	time "6h"
@@ -134,6 +137,13 @@ process GRAPH_BARRIER {
     """
 
 }
+
+// need to concatenate outputs-- use collectFile?
+// process CONCAT_BARIER {
+
+//     input:
+//     pat
+// }
 
 // process SPATIAL_CLUSTERING {
 
@@ -166,5 +176,9 @@ process GRAPH_BARRIER {
 // }
 
 // process TOPOLOGICAL_DATA_ANALYSIS {
+
+// }
+
+// process TUMOUR_NORMAL {
 
 // }

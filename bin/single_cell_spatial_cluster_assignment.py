@@ -40,7 +40,7 @@ class config(object):
         self.OBJECTS_FILEPATH = o #'/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/{}/imc/outputs/cell_typing/{}_cell_objects_{}_final_{}.txt'.format(self.COHORT, self.COHORT, self.COHORT, self.PANEL)
 
         # object table separator:
-        self.OBJECT_SEP = ',' #\t'
+        self.OBJECT_SEP = '\t'
 
         # path to metadata file:
         self.METADATA = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'
