@@ -16,7 +16,7 @@ from spclust_util import (assemble_cluster_polygons, assign_to_spclust,
 
 class config(object):
 
-    def __init__(self, X, c, p, t, o):
+    def __init__(self, X, c, p, t, o, sep):
 
         # study cohort (from command line):
         self.IMAGENAME = X
@@ -40,7 +40,7 @@ class config(object):
         self.OBJECTS_FILEPATH = o #'/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/{}/imc/outputs/cell_typing/{}_cell_objects_{}_final_{}.txt'.format(self.COHORT, self.COHORT, self.COHORT, self.PANEL)
 
         # object table separator:
-        self.OBJECT_SEP = '\t'
+        self.OBJECT_SEP = sep #'\t', or ','
 
         # path to metadata file:
         self.METADATA = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'
@@ -171,7 +171,7 @@ def main(CONFIG):
 
 if __name__ == "__main__":
     # create configuration based on input args:
-    CONFIG = config(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    CONFIG = config(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
 
     # pass CONFIG to main():
     main(CONFIG)

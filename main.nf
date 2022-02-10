@@ -1,37 +1,51 @@
 #!/usr/bin/env nextflow
 
+/*********************************************
+* RUBICON NEXTFLOW SPATIAL ANALYSIS PIPELINE *
+*********************************************/
+
+/*
+COHORT PARAMETERS
+*/
+params.COHORT = 'tx100'
+params.PANEL = 'p1'
 
 /*
  * GRAPH ANALYSIS CONFIG PARAMETERS
  */
 
- //
-params.neighborhood_input = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/nextflow/p1/publication/*/results/segmentation/*/*/neighbourhood.csv'
+params.neighborhood_input = "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/nextflow/${params.PANEL}/publication/*/results/segmentation/*/*/neighbourhood.csv"
 params.neighbourhood_module_no = 865
 params.md_cuda = "CUDA/10.1.105"
 params.md_conda = "Anaconda3" 
 params.graph_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-0.18"
 params.RELEASE = '2022_02_09_release'
+params.CALCULATE_BARRIER = true
 
 /*
  * SPATIAL CLUSTERING CONFIG PARAMETERS
  */
 
-params.COHORT = 'tx100'
-params.PANEL = 'p1'
 params.OBJECTS = "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_${params.PANEL}.txt"
-params.md_conda = "Anaconda3" 
+params.OBJECTS_DELIMITER = '\t'
 params.spclust_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/tf"
+params.PHENOTYPING_LEVELS = 'cellType'
 
-// Pipeline execution parameters:
+/*
+ * Pipeline execution parameters:
+ */
+
 params.dev = false
 params.number_of_inputs = 2
 params.publish_dir_mode = 'copy'
-params.outdir = '../results'
+params.OVERWRITE = true
+params.outdir = '../../results'
 project_dir = projectDir
 
 // directly create a list channel for phenotyping levels for combinatoric input of phenotype levels and imagenames
-ch_phenotyping = Channel.fromList(['cellType', 'majorType'])
+pheno_list = params.PHENOTYPING_LEVELS?.tokenize(',')
+// ch_phenotyping = Channel.fromList(['cellType', 'majorType'])
+ch_phenotyping = Channel.fromList(pheno_list)
 
 // channel for neighbourhood input csv files
 if (params.neighborhood_input) {
@@ -65,7 +79,7 @@ process GENERATE_IMAGENAMES {
     #!/usr/bin/env python
     import pandas as pd
  
-    objects = pd.read_csv('${params.OBJECTS}', sep='\t', encoding='latin1')
+    objects = pd.read_csv('${params.OBJECTS}', sep='${params.OBJECTS_DELIMITER}', encoding='latin1')
     imagenames = objects['imagename'].unique().tolist()
     for imagename in imagenames:
         print(imagename)
@@ -82,10 +96,13 @@ process NEIGHBOURHOOD_GRAPH {
 	// time "0.25h"
 	// clusterOptions "--part=cpu --cpus-per-task=4 --mem=2GB"
 
+    when:
+    params.CALCULATE_BARRIER
+
     module params.md_conda
     conda params.spclust_conda_env
 
-    publishDir "${params.outdir}/${params.RELEASE}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${params.RELEASE}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
     val nhood_file from ch_nhood
@@ -103,6 +120,9 @@ process GRAPH_BARRIER {
     Run graph barrier scoring for all cell types.
     */
 
+    when:
+    params.CALCULATE_BARRIER
+
     executor "slurm"
 	time "6h"
 	clusterOptions "--part=gpu --gres=gpu:1"
@@ -112,7 +132,7 @@ process GRAPH_BARRIER {
 
     echo true
 
-    publishDir "${params.outdir}/${params.RELEASE}/graph/barrier", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${params.RELEASE}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
     val adj_list from adj_output_ch
@@ -147,7 +167,7 @@ process SPATIAL_CLUSTERING {
 
     echo true
 
-    publishDir "${params.outdir}/${params.RELEASE}/spatial_clustering", mode: params.publish_dir_mode
+    publishDir "${params.outdir}/${params.RELEASE}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
     tuple imagename, level from ch_imagenames.splitText().map{x -> x.trim()}.combine(ch_phenotyping) //split imagenames and remove trailing newline; create a tuple with channel of phenotyping levels
@@ -158,7 +178,7 @@ process SPATIAL_CLUSTERING {
     file "**/*.png" optional true into ch_cluster_plots
 
     """
-    single_cell_spatial_cluster_assignment.py $imagename ${params.COHORT} ${params.PANEL} $level ${params.OBJECTS}
+    single_cell_spatial_cluster_assignment.py $imagename ${params.COHORT} ${params.PANEL} $level ${params.OBJECTS} ${params.OBJECTS_DELIMITER}
     """
 
 }
