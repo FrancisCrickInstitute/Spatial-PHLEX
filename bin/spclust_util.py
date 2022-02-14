@@ -1,20 +1,25 @@
 #!/usr/bin/env python
 
+from cProfile import label
 import glob
+import multiprocessing as mp
 import os
+import re
 import sys
 
+import alphashape
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import skimage.io as io
+from descartes import PolygonPatch
+from matplotlib.path import Path
+from shapely.geometry import MultiPolygon, Point, Polygon
+from skimage.util import img_as_uint, img_as_ubyte
+from skimage.transform import rotate
 from sklearn import metrics
 from sklearn.cluster import DBSCAN, KMeans
 from tqdm import *
-
-import alphashape
-from descartes import PolygonPatch
-from shapely.geometry import MultiPolygon, Point, Polygon
 
 ########################
 # FUNCTION DEFINITIONS #
@@ -89,6 +94,7 @@ def plot_clusters(clustered_df, cluster_labels, image_shape, sample_name, cluste
     ax.set_ylabel('Centroid Y µm')
     ax.set_ylim(0,image_shape[0])
     ax.set_xlim(0,image_shape[1])
+    plt.gca().invert_yaxis()
     plt.savefig('{}/{}_{}_alpha_{}.png'.format(outdir,sample_name, clustering_cell_type, alphashape_param))
     plt.close()
 
@@ -280,3 +286,111 @@ def save_cluster_alphashapes(alphashapes, cellType, imagename, out_dir):
     print(df)
     spath = os.path.join(out_dir, '{}_{}_alphashape_polygons_wkt.csv'.format(imagename, cellType))
     df.to_csv(spath)
+
+    return df
+
+import multiprocessing as mp
+
+import skimage.io as io
+from matplotlib.path import Path
+from skimage.util import img_as_uint
+
+## WKT functions
+
+def reconstruct_labels_from_wkt(shapes, imshape):
+    """
+    Reconstruct a label image from a dataframe containing wkt-encoded polygons.
+    """
+    # make a canvas with coordinates:
+    x, y = np.meshgrid(np.arange(imshape[0]), np.arange(imshape[1]), indexing='ij')
+    x, y = x.flatten(), y.flatten()
+    points = np.vstack((x,y)).T 
+    image = np.zeros(imshape)
+
+    # loop through wkt=encoded shapes in dataframe:
+    for i in range(len(shapes.index)):
+        
+        # extract given wkt:
+        wkt = shapes.loc[i, 'well-known_txt']
+
+        # transform wkt string to coords:
+        coords = parse_wkt(wkt)
+
+        # check if coords is a list of lists (i.e. a multipolygon):
+        if any(isinstance(el, list) for el in coords) == True:
+
+            # loop through polygons if parse_wkt returns list of polygons
+            for j in range(len(coords)):
+                p = Path(coords[j]) # make a polygon
+                grid = p.contains_points(points)
+                if j == 0 :
+                    mask = grid.reshape(imshape[0],imshape[1]) 
+                else:
+                    mask = np.add(mask, grid.reshape(imshape[0],imshape[1]))
+                
+                image = np.where(mask!=0, i+1, image)
+
+        else:
+            # just process single polygon:
+            p = Path(coords)
+            grid = p.contains_points(points)
+            mask = grid.reshape(imshape[0],imshape[1]) # now you have a mask with points inside a polygon
+            image = np.where(mask!=0, i+1, image)
+
+    
+    return image
+
+
+def parse_wkt(wkt):
+    """
+    Parse a well known-text format polygon string into a list of coordinates (for polygons), 
+    or a list of list of coords for multipolygons.
+    """
+    # PROCESS POLYGON STRINGS:
+    if wkt.split('(')[0] == 'POLYGON ':
+        parsed_wkt = wkt.split('(')[2].split(')')[0].split(', ')
+        xs = []
+        ys = []
+        for i in range(len(parsed_wkt)):
+            xs.append(float(parsed_wkt[i].split(' ')[0]))
+            ys.append(float(parsed_wkt[i].split(' ')[1]))
+        coords = list(zip(xs,ys))
+
+    # PROCESS MULTIPOLYGON:
+    elif wkt.split('(')[0] == 'MULTIPOLYGON ':
+        coords = []
+        # print(wkt)
+        parsed_wkt = wkt.split(')), ((') 
+        for i in range(len(parsed_wkt)):
+            parser = parsed_wkt[i] 
+            parser = re.sub(r'\(','',parser)
+            parser = re.sub(r'\)','',parser)
+            parser = re.sub(r'MULTIPOLYGON ','',parser)
+            parser = parser.split(', ')
+            xs = []
+            ys = []
+            for j in range(len(parser)):
+                xs.append(float(parser[j].split(' ')[0]))
+                ys.append(float(parser[j].split(' ')[1]))
+            poly_coords = list(zip(xs,ys))
+            coords.append(poly_coords)
+    else:
+        raise ValueError("wkt polygon type not recognised.")
+
+    return coords
+
+def pipeline_make_label(wkts, shape, path):
+    '''
+    Reconstruct the label image of the dataframe of alpha shapes in wkt format, wkts.
+    ''' 
+    label_image = reconstruct_labels_from_wkt(wkts, shape)
+    label_image = label_image / np.amax(label_image)
+    label_image = rotate(label_image, 270)
+    label_image = np.fliplr(label_image) # flip vertically to match original images
+    label_image = img_as_uint(label_image)
+    io.imsave(path, label_image)
+
+    binary = label_image > 0
+    binary = img_as_ubyte(binary)
+    io.imsave(path.replace('_alphashape_polygons_label.tiff', '_alphashape_polygons_binary.png'), binary)
+

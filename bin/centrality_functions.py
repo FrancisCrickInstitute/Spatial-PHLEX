@@ -2,7 +2,7 @@
 
 import pandas as pd
 import numpy as np
-import scanpy as sc
+# import scanpy as sc
 import squidpy as sq
 from anndata import AnnData
 from numpy.random import default_rng

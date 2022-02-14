@@ -11,12 +11,12 @@ from tqdm import *
 
 from spclust_util import (assemble_cluster_polygons, assign_to_spclust,
                           do_clustering, get_image_shape, get_image_shape_from_metadata, plot_clusters,
-                          save_cluster_alphashapes)
+                          save_cluster_alphashapes, pipeline_make_label)
 
 
 class config(object):
 
-    def __init__(self, X, c, p, t, o, sep):
+    def __init__(self, X, c, p, t, o, o_sep, met, met_sep):
 
         # study cohort (from command line):
         self.IMAGENAME = X
@@ -37,21 +37,19 @@ class config(object):
         self.MIN_S = 0
 
         # path to dataframe file containing phenotype locations:
-        self.OBJECTS_FILEPATH = o #'/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/{}/imc/outputs/cell_typing/{}_cell_objects_{}_final_{}.txt'.format(self.COHORT, self.COHORT, self.COHORT, self.PANEL)
+        self.OBJECTS_FILEPATH = o 
 
         # object table separator:
-        self.OBJECT_SEP = sep #'\t', or ','
+        self.OBJECT_SEP = o_sep #'\t', or ','
 
         # path to metadata file:
-        self.METADATA = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'
+        self.METADATA = met
 
         # separator of metadata file:
-        self.MSEP = '\t'
+        self.MSEP = met_sep
 
         # alphashape curvature parameter:
         self.ALPHA = 0.05  
-
-        self.RELEASE_VERSION = '2022-02-02_release'
 
         # base output directory:
         self.ROOT_OUT_DIR = './single_cell_assignment/{}/{}/{}/dbscan_{}/min_size_{}/alpha_{}'.format(self.COHORT, self.PANEL, self.PHENOTYPING_LEVEL, self.EPS, self.MIN_S, self.ALPHA)
@@ -135,7 +133,7 @@ def main(CONFIG):
             print('\n {} spatial clusters with > {} cells.'.format(len(spatial_cluster_polygons), CONFIG.MIN_S))
 
             # save alphashapes to csv dataframe:
-            save_cluster_alphashapes(spatial_cluster_polygons, cType, imagename, out_dir)
+            alphashape_df = save_cluster_alphashapes(spatial_cluster_polygons, cType, imagename, out_dir)
 
             # assign + measure distances of single cells to dbscan clusters:
             print('\nPerforming assignment of cells to spatial clusters.')
@@ -164,14 +162,17 @@ def main(CONFIG):
         
 
         # PLOT CLUSTERS WITH ALPHASHAPE:
-        imshape = get_image_shape_from_metadata(metadata, imagename)  
+        imshape = get_image_shape_from_metadata(metadata, imagename) 
         plot_clusters(clustering_cells_df, clustering_cells_df['dbscan_cluster'].values, imshape, imagename, cType, out_dir, alphashape_param=CONFIG.ALPHA)
+        
+        alphashape_spath = os.path.join(out_dir, f'{imagename}_{cType}_alphashape_polygons_label.tiff')
+        pipeline_make_label(alphashape_df, imshape, alphashape_spath)
 
         print('\nDone.')
 
 if __name__ == "__main__":
     # create configuration based on input args:
-    CONFIG = config(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
+    CONFIG = config(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8])
 
     # pass CONFIG to main():
     main(CONFIG)

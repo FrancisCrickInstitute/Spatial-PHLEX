@@ -11,9 +11,16 @@
 ml purge
 ml Nextflow/21.04.3
 
+# nextflow run ./main.nf \
+#     --PANEL 'p2' \
+#     --CALCULATE_BARRIER false \
+#     --OBJECTS '/camp/lab/swantonc/working/leec/nolan/cn_output/31012022/cells_p2_10n.csv' \
+#     --PHENOTYPING_LEVELS 'neighborhood10' \
+#     --OBJECTS_DELIMITER ',' \
+
 nextflow run ./main.nf \
-    --PANEL 'p2' \
-    --CALCULATE_BARRIER false \
-    --OBJECTS '/camp/lab/swantonc/working/leec/nolan/cn_output/31012022/cells_p2_10n.csv' \
-    --PHENOTYPING_LEVELS 'neighborhood10' \
-    --OBJECTS_DELIMITER ',' \
+    --PANEL 'p' \
+    --CALCULATE_BARRIER true \
+    --PHENOTYPING_LEVELS 'cellType_majorType' \
+    --OBJECTS_DELIMITER '\t' \
+    --dev
