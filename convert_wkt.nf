@@ -32,7 +32,7 @@ params.PHENOTYPING_LEVELS = 'cellType'
  */
 
 params.dev = false
-params.number_of_inputs = 2
+params.number_of_inputs = 1
 params.publish_dir_mode = 'copy'
 params.OVERWRITE = true
 params.outdir = '../../results'

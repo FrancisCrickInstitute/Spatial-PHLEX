@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from centrality_functions import assign_cell_categories, compute_cohort_centralities, compute_spatial_graph, compute_nn_graph
+from centrality_functions import assign_cell_categories #, compute_cohort_centralities, compute_spatial_graph, compute_nn_graph
 import pandas as pd
 import cugraph as cg
 import networkx as nx

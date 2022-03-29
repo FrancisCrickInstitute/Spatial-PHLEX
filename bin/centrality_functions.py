@@ -3,14 +3,14 @@
 import pandas as pd
 import numpy as np
 # import scanpy as sc
-import squidpy as sq
-from anndata import AnnData
+# import squidpy as sq
+# from anndata import AnnData
 from numpy.random import default_rng
-from squidpy.gr._utils import (
-    _get_valid_values,
-    _assert_categorical_obs,
-    _assert_non_empty_sequence,
-)
+# from squidpy.gr._utils import (
+#     _get_valid_values,
+#     _assert_categorical_obs,
+#     _assert_non_empty_sequence,
+# )
 
 
 def assign_cell_categories(df, typing = 'new'):

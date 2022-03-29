@@ -428,3 +428,43 @@ def degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, bar
     else:
         mean_adjacent_barrier = 0
     return mean_adjacent_barrier
+
+def permute_phenotypes(objects, in_place=True, region = 'all'):
+    '''
+    Randomly permute phenotype and positivity information for all images in the objects table.
+    
+    Args:
+    objects = cell objects dataframe with each image as a distinct imagename
+    in_place = bool, if True overwrite current cell phenotype data in place, 
+            otherwise add '_permuted' columns
+    region = str, subset permutation to a give tissue region defined by 'region' column.
+            'all' = do not subset, permute all cells.
+        
+    '''
+    if region == 'all':
+        for imagename in objects['imagename'].unique():
+            rng = np.random.default_rng(seed=123)
+            if in_place:
+                objects.loc[objects['imagename'] == imagename, 
+                            ('cellType', 'majorType', 'positive')] = rng.permutation(objects.loc[objects['imagename'] == imagename,
+                                                                                                 ('cellType', 'majorType', 'positive')].values)
+            else:
+                objects.loc[objects['imagename'] == imagename, 
+                            ('cellType_permuted', 'majorType_permuted', 'positive_permuted')] = rng.permutation(objects.loc[objects['imagename'] == imagename,
+                                                                                                 ('cellType', 'majorType', 'positive')].values)
+    else:
+        for imagename in objects['imagename'].unique():
+            rng = np.random.default_rng(seed=123)
+            if in_place:
+                objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region), 
+                            ('cellType', 'majorType', 'positive')] = rng.permutation(objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region),
+                                                                                                 ('cellType', 'majorType', 'positive')].values)
+            else:
+                objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region), 
+                            (f'cellType_{region}_permuted', f'majorType_{region}_permuted', f'positive_{region}_permuted')] = rng.permutation(objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region),
+                                                                                                 ('cellType', 'majorType', 'positive')].values)
+                objects.loc[(objects['imagename'] == imagename) & ~(objects['region'] == region), 
+                            (f'cellType_{region}_permuted', f'majorType_{region}_permuted', f'positive_{region}_permuted')] = objects.loc[(objects['imagename'] == imagename) & ~(objects['region'] == region),
+                                                                                                 ('cellType', 'majorType', 'positive')].values
+
+    return objects

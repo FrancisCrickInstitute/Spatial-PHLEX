@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 
 /*********************************************
 * RUBICON NEXTFLOW SPATIAL ANALYSIS PIPELINE *
@@ -18,19 +17,20 @@ params.neighborhood_input = "/camp/project/proj-tracerx-lung/tctProjects/rubicon
 params.neighbourhood_module_no = 865
 params.md_cuda = "CUDA/10.1.105"
 // params.md_cuda = "CUDA/11.1.1-GCC-10.2.0"
-params.md_conda = "Anaconda3" 
+params.md_conda = "Anaconda3" //"Anaconda3" 
 params.graph_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-0.18"
-params.RELEASE = "development_testing" //'2022_02_11_release'
+params.RELEASE = "development_testing_20220329" //'2022_02_11_release'
 params.CALCULATE_BARRIER = true
 
 /*
  * SPATIAL CLUSTERING CONFIG PARAMETERS
  */
 
+params.do_spatial_clustering = false
 params.OBJECTS = "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_${params.PANEL}.txt"
 params.OBJECTS_DELIMITER = '\t'
 params.spclust_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/tf"
-params.PHENOTYPING_LEVELS = 'majorType_cellType'
+params.PHENOTYPING_LEVELS = 'majorType,cellType'
 params.MAKE_SPATIAL_CLUSTER_MASKS = true
 params.METADATA = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'
 params.METADATA_DELIMITER = '\t'
@@ -40,7 +40,7 @@ params.METADATA_DELIMITER = '\t'
  */
 
 params.dev = false
-params.number_of_inputs = 2
+params.number_of_inputs = 1
 params.publish_dir_mode = 'copy'
 params.OVERWRITE = true
 params.outdir = '../../results'
@@ -99,11 +99,8 @@ process NEIGHBOURHOOD_GRAPH {
 	// time "0.25h"
 	// clusterOptions "--part=cpu --cpus-per-task=4 --mem=2GB"
 
-    when:
-    params.CALCULATE_BARRIER
-
     module params.md_conda
-    conda params.spclust_conda_env
+    conda params.graph_conda_env
 
     publishDir "${params.outdir}/${params.RELEASE}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
@@ -112,6 +109,9 @@ process NEIGHBOURHOOD_GRAPH {
 
     output:
     path "*/*.txt" into adj_output_ch
+
+    when:
+    params.CALCULATE_BARRIER
 
     """
     cp2nx.py $nhood_file ${params.neighbourhood_module_no} ./
@@ -123,17 +123,12 @@ process GRAPH_BARRIER {
     Run graph barrier scoring for all cell types.
     */
 
-    when:
-    params.CALCULATE_BARRIER
-
     executor "slurm"
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
     module params.md_conda
     conda params.graph_conda_env
-
-    echo true
 
     publishDir "${params.outdir}/${params.RELEASE}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
@@ -143,18 +138,16 @@ process GRAPH_BARRIER {
     output:
     file "**/*.csv" optional true into ch_barrier_results
 
+    when:
+    params.CALCULATE_BARRIER
+
     """
     stromal_barrier.py $adj_list ./ ${params.OBJECTS} ${params.PANEL}
     """
 
 }
 
-// need to concatenate outputs-- use collectFile?
-// process CONCAT_BARIER {
 
-//     input:
-//     pat
-// }
 
 process SPATIAL_CLUSTERING {
     /*
@@ -168,8 +161,6 @@ process SPATIAL_CLUSTERING {
     module params.md_conda
     conda params.spclust_conda_env
 
-    echo true
-
     publishDir "${params.outdir}/${params.RELEASE}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
@@ -180,6 +171,9 @@ process SPATIAL_CLUSTERING {
     file "**/*wkt.csv" optional true into ch_wkts
     file "**/*.png" optional true into ch_cluster_plots
     file "**/*.tiff" optional true into ch_alpha_labels
+
+    when:
+    params.do_spatial_clustering
 
     """
     single_cell_spatial_cluster_assignment.py $imagename ${params.COHORT} ${params.PANEL} $level ${params.OBJECTS} '${params.OBJECTS_DELIMITER}' ${params.METADATA} '${params.METADATA_DELIMITER}'

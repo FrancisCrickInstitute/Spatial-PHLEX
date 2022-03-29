@@ -3,11 +3,11 @@ params.COHORT = 'tx100'
 params.PANEL = 'p1'
 params.PHENOTYPING_LEVEL =  'cellType'// 'majorType', 'neighborhood10'
 params.OBJECTS = '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt'
-params.outdir = '../results'
+params.outdir = '../../results'
 params.publish_dir_mode = 'copy'
 params.md_conda = "Anaconda3" 
 params.spclust_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/tf"
-params.RELEASE = 'release_2022_02_09'
+params.RELEASE = "development_testing_20220329"
 
 ch_phenotyping = Channel.fromList(['cellType', 'majorType'])
 

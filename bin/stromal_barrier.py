@@ -22,6 +22,8 @@ def main(args):
     PANEL = args[3] #'p2'
     imagename = os.path.split(ADJACENCY_DATA_PATH)[1].replace('.txt', '')
     CALC_CHAIN = True
+    PERMUTE_PHENOTYPES = True
+    PERMUTATION_REGION = 'all'
     BARRIER_TYPES = ['Myofibroblasts']
     phenotyping_level = 'cellType' # 'cellType', 'majorType', 'Positive', 'cellClass'
     
@@ -50,6 +52,9 @@ def main(args):
 
     if imagename in objects['imagename'].unique():
 
+        if PERMUTE_PHENOTYPES == True:
+            objects = sb.permute_phenotypes(objects, in_place=True, region=PERMUTATION_REGION)
+
         objects = sb.assign_cell_categories(objects, typing='new')
         print(objects)
 
@@ -65,10 +70,12 @@ def main(args):
             spg = sb.compute_spatial_graph(objects, imagename, markers, radius=RADIUS)
             G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
             node_ids = sb.get_graph_node_ids(spg)
+            node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
         elif GRAPH_TYPE == 'nearest_neighbour':
             spg = sb.compute_nn_graph(objects, imagename, markers, n_neighs=NEIGHBOURS)
             G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
             node_ids = sb.get_graph_node_ids(spg)
+            node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
         elif GRAPH_TYPE == 'neighbouRhood':
 
             # specify attributes to attach to nodes:
@@ -172,7 +179,11 @@ def main(args):
         image_barrier_df['binary_barrier'] = image_barrier_df.apply(lambda x: sb.binary_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
         image_barrier_df['adjacent_barrier'] = image_barrier_df.apply(lambda x: sb.adjacent_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
 
-        spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
+        if PERMUTE_PHENOTYPES == True: 
+            spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_permuted.csv')
+        else:
+            spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
+
         image_barrier_df.to_csv(spath)
         
     else:
