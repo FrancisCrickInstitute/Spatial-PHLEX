@@ -8,31 +8,46 @@ from tqdm import *
 from collections import Counter
 import os, sys
 import sb_functions as sb 
+import argparse
 
 def main(args):
 
     # config:
-    GRAPH_TYPE = 'neighbouRhood' # 'nearest_neighbour' or 'spatial_neighbours', 'neighbouRhood'
-    NEIGHBOURS = 10
-    RADIUS = 5
-    NEIGHBOURHOOD_RADIUS = 5
-    ADJACENCY_DATA_PATH = args[0]
-    ROOT_OUT = args[1]
-    OBJECTS_PATH = args[2]
-    PANEL = args[3] #'p2'
-    imagename = os.path.split(ADJACENCY_DATA_PATH)[1].replace('.txt', '')
-    CALC_CHAIN = True
-    PERMUTE_PHENOTYPES = True
-    PERMUTATION_REGION = 'all'
-    BARRIER_TYPES = ['Myofibroblasts']
-    phenotyping_level = 'cellType' # 'cellType', 'majorType', 'Positive', 'cellClass'
+    GRAPH_TYPE = args.graph_type # 'nearest_neighbour' or 'spatial_neighbours', 'neighbouRhood'
+    NEIGHBOURS = args.neighbours# 10
+    RADIUS = args.radius # 5
+    NEIGHBOURHOOD_RADIUS = args.neighbourhood_radius #5
+    ADJACENCY_DATA_PATH = args.adjacency_data_path # this should be conditional argument; only used if 'neighbouRhood' the specified graph type; graph type should be specified as args input 
+    ROOT_OUT = args.root_out
+    OBJECTS_PATH = args.objects_path
+    OBJECT_SEP = args.objects_sep #','
+    PANEL = args.panel # args[3] #'p2'
+    if GRAPH_TYPE == 'neighbouRhood':
+        imagename = os.path.split(ADJACENCY_DATA_PATH)[1].replace('.txt', '') # args.imagename #
+    else:
+        imagename = args.imagename
+
+    CALC_CHAIN = args.calc_chain # True
+    PERMUTE_PHENOTYPES = args.permute_phenotypes #False
+    PERMUTATION_REGION = args.permutation_region #'all'
+    
+    if type(args.barrier_types) == list:
+        BARRIER_TYPES = args.barrier_types #['Myofibroblasts']
+    else:
+        BARRIER_TYPES = [args.barrier_types]
+
+    print(BARRIER_TYPES)
+
+    phenotyping_level = args.phenotyping_level #'cellType' # 'cellType', 'majorType', 'Positive', 'cellClass'
+    EPI_NO_STROMA = False # remove tumour cells not part of large clusters
     
     # Define immune cell subtypes to measure the 'barrier' for:
-    cellTypes = ['CD4 T cells', 'CD4 T cells', 'CD57+ CD4 T cells', 'Naive CD4 T cells',
+    cellTypes = ['CD8 T cells'] 
+    '''['CD4 T cells', 'CD4 T cells', 'CD57+ CD4 T cells', 'Naive CD4 T cells',
        'Leukocytes - Other', 'CD4+ Myeloid cells', 'Cytotoxic CD8 T cells',
        'CD4 Tcm', 'Tregs', 'CD8 Trm', 'CD8 T cells', 'CD57+ CD8 Trm',
        'CD8 Exhausted TDT', 'Naive CD8 T cells', 'T cells DP',
-       'Cytotoxic CD4 T cells', 'T cells - Other']
+       'Cytotoxic CD4 T cells', 'T cells - Other']'''
 
 
     if GRAPH_TYPE == 'spatial_neighbours':
@@ -48,7 +63,14 @@ def main(args):
         os.makedirs(RESULTS_DIR, exist_ok=True)
 
     # Read in necessary files:
-    objects = pd.read_csv(OBJECTS_PATH, sep='\t', encoding='latin1')
+    objects = pd.read_csv(OBJECTS_PATH, sep=OBJECT_SEP, encoding='latin1')
+    print(objects)
+    print('\nThe unique imagenames in the objects table are:\n')
+    print(objects['imagename'].unique())
+    
+    if EPI_NO_STROMA == True:
+        # assign distal stroma epithelial cells to unassigned to test
+        objects.loc[(objects['domain'] == 'Distal Stroma') & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unassigned'
 
     if imagename in objects['imagename'].unique():
 
@@ -112,6 +134,8 @@ def main(args):
 
             ## node ids of the target cell type:
             cellType_node_ids = sb.get_cellType_node_ids(node_ids, 'cellType', cellType)
+            positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
+            print(cellType_node_ids)
             
             if len(cellType_node_ids.index) > 0:
 
@@ -151,44 +175,85 @@ def main(args):
                                 barrier_content.append(n_barrier_cells)
                                 all_vertexes.append(int(v))
 
-            ## construct dataframe of results:
-            barrier_df = pd.DataFrame(data=list(zip(all_chain_lengths, barrier_content, all_degenerate_counts, all_degenerate_adjacent)), columns=['chainlength', 'barrier_content', 'degenerate_barrier_fraction', 'degenerate_adjacent_fraction'])
-            barrier_df['cell_chain'] = all_cellchains
-            barrier_df['vertex_chain'] = all_vertex_chains
-            barrier_df['internal_chainlength'] = barrier_df['chainlength'] - 2
-            barrier_df['barrier_fraction'] = barrier_df['barrier_content'] / barrier_df['internal_chainlength']
-            barrier_df['imagename'] = imagename
-            barrier_df['source_cell'] = cellType
-            barrier_df['target_cell'] = 'Epithelial cells'
-            barrier_df['vertex'] = all_vertexes
-            barrier_df_list.append(barrier_df)
+                ## construct dataframe of results:
+                barrier_df = pd.DataFrame(data=list(zip(all_chain_lengths, barrier_content, all_degenerate_counts, all_degenerate_adjacent)), columns=['chainlength', 'barrier_content', 'degenerate_barrier_fraction', 'degenerate_adjacent_fraction'])
+                barrier_df['cell_chain'] = all_cellchains
+                barrier_df['vertex_chain'] = all_vertex_chains
+                barrier_df['internal_chainlength'] = barrier_df['chainlength'] - 2
+                barrier_df['barrier_fraction'] = barrier_df['barrier_content'] / barrier_df['internal_chainlength']
+                barrier_df['imagename'] = imagename
+                barrier_df['source_cell'] = cellType
+                barrier_df['target_cell'] = 'Epithelial cells'
+                barrier_df['vertex'] = all_vertexes
 
-        ## Concatenate barrier dataframes for all cell types:
-        image_barrier_df = pd.concat(barrier_df_list)
+                ## relabel vertexes with object IDs from typing tables:
+                barrier_df['object'] = barrier_df['vertex'].map(node_label_dict) ## remap object ids from vertices
+                barrier_df['object_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, node_label_dict))
 
-        ## relabel vertexes with object IDs from typing tables:
-        image_barrier_df['object'] = image_barrier_df['vertex'].map(node_label_dict) ## remap object ids from vertices
-        image_barrier_df['object_chain'] = image_barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, node_label_dict))
+                ## add marker positivity information:
+                barrier_df['positivity_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
 
-        ## add marker positivity information:
-        positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
-        image_barrier_df['positivity_chain'] = image_barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
+                ## apply lambda function to calculate barrier score with specific cell types:
+                print(barrier_df)
+                barrier_df['weighted_barrier_content'] = barrier_df.apply(lambda x: sb.weighted_barrier_count(x['cell_chain'], BARRIER_TYPES), axis=1)
+                barrier_df['binary_barrier'] = barrier_df.apply(lambda x: sb.binary_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+                barrier_df['adjacent_barrier'] = barrier_df.apply(lambda x: sb.adjacent_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+                barrier_df_list.append(barrier_df)
 
-        ## apply lambda function to calculate barrier score with specific cell types:
-        image_barrier_df['weighted_barrier_content'] = image_barrier_df.apply(lambda x: sb.weighted_barrier_count(x['cell_chain'], BARRIER_TYPES), axis=1)
-        image_barrier_df['binary_barrier'] = image_barrier_df.apply(lambda x: sb.binary_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
-        image_barrier_df['adjacent_barrier'] = image_barrier_df.apply(lambda x: sb.adjacent_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+        if len(barrier_df_list) > 0:
+            ## Concatenate barrier dataframes for all cell types:
+            image_barrier_df = pd.concat(barrier_df_list)
 
-        if PERMUTE_PHENOTYPES == True: 
-            spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_permuted.csv')
-        else:
-            spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
+            print('image_barrier_df', image_barrier_df)
 
-        image_barrier_df.to_csv(spath)
+            # ## relabel vertexes with object IDs from typing tables:
+            # image_barrier_df['object'] = image_barrier_df['vertex'].map(node_label_dict) ## remap object ids from vertices
+            # image_barrier_df['object_chain'] = image_barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, node_label_dict))
+
+            # ## add marker positivity information:
+            # positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
+            # image_barrier_df['positivity_chain'] = image_barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
+
+            # ## apply lambda function to calculate barrier score with specific cell types:
+            # print(image_barrier_df)
+            # image_barrier_df['weighted_barrier_content'] = image_barrier_df.apply(lambda x: sb.weighted_barrier_count(x['cell_chain'], BARRIER_TYPES), axis=1)
+            # image_barrier_df['binary_barrier'] = image_barrier_df.apply(lambda x: sb.binary_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+            # image_barrier_df['adjacent_barrier'] = image_barrier_df.apply(lambda x: sb.adjacent_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+
+            if PERMUTE_PHENOTYPES == True: 
+                spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_permuted.csv')
+
+            elif EPI_NO_STROMA:
+                spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_no_stroma_epithelial.csv')
+            else:
+                spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
+
+            image_barrier_df.to_csv(spath)
         
     else:
         print(f"There are no typed objects for {imagename}.")
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+
+    # create argument parser
+    parser = argparse.ArgumentParser(description = 'Stromal barrier measurement parameters.')
+    parser.add_argument('--graph_type', help='connectivity type for cell spatial graph construction')
+    parser.add_argument('--neighbourhood_radius', type = int, help='Dilation used to determine cell neighbours in neighbouRhood graph')
+    parser.add_argument('--adjacency_data_path', help='folder containing adjacency list files in csv format for neighbouRhood graphs')
+    parser.add_argument('--radius', type = float, help='radius for spatial neighbours graph')
+    parser.add_argument('--neighbours', type = int, help='number of neighbours for nearest neighbour graph')
+    parser.add_argument('--root_out', help='Root output directory for saving.')
+    parser.add_argument('--objects_path', help='/path/to/cell objects dataframe.')
+    parser.add_argument('--objects_sep', help='Objects file delimiter.')
+    parser.add_argument('--panel', help='IMC panel name.')
+    parser.add_argument('--calc_chain', type = bool, help='Calculate the chain of cell objects from the starting cell to the end cell.', default=True)
+    parser.add_argument('--imagename', help='Name of image in cell objects dataframe')
+    parser.add_argument('--permute_phenotypes', type = bool, help='Randomly permute cell phenotypes in a given domain.', default=False)
+    parser.add_argument('--permutation_region', help='Domain in which to permute cells. e.g. "tumour" or "stroma. Depends on this information being available in the cell objects table under column "region".')
+    parser.add_argument('--barrier_types', nargs='+', help='Cell types to assign as barrier cells e.g. Myofibroblasts. Multiple arguments accepted e.g. --barrier_types Myofibroblasts Fibroblasts.')
+    parser.add_argument('--phenotyping_level', help='Designation of the objects table column to use to determine phenotypes e.g. majorType or cellType, but depends can be other depending on columns in objects.csv')
+    args = parser.parse_args()
+
+    # pass command line arguments to main:
+    main(args)

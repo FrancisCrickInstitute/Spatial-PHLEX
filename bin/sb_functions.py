@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 
 import os
 import sys
@@ -111,7 +111,7 @@ def compute_cohort_centralities(objects, markers, phenotyping_level='cellType', 
     return cohort_centralities
 
 
-def compute_spatial_graph(objects, imagename, markers, phenotyping_level='cellType', radius=35):
+def compute_spatial_graph(objects, imagename, markers, phenotyping_level='cellType', radius=35, rand_features=True):
 
      # annotate adata with phenotyping info
     image_objects = objects[objects['imagename'] == imagename].astype('category')
@@ -120,7 +120,12 @@ def compute_spatial_graph(objects, imagename, markers, phenotyping_level='cellTy
 
     if len(image_cTypes) > 0: # only proceed if there are cells of the specified phenotype level in the image
 
-        features = image_objects[markers].values
+        if rand_features == True:
+            # create dummy features so we can use this method of graph construction
+            features = np.random.rand(len(image_objects), len(markers))
+        else:
+            features = image_objects[markers].values
+            
         majorTypes = image_objects['majorType'].values
         cellTypes = image_objects['cellType'].values
         cellClasses = image_objects['cellClass'].values
@@ -137,7 +142,7 @@ def compute_spatial_graph(objects, imagename, markers, phenotyping_level='cellTy
     return adata
 
 
-def compute_nn_graph(objects, imagename, markers, phenotyping_level='cellType', n_neighs=6):
+def compute_nn_graph(objects, imagename, markers, phenotyping_level='cellType', n_neighs=6, rand_features=True):
 
      # annotate adata with phenotyping info
     image_objects = objects[objects['imagename'] == imagename].astype('category')
@@ -146,7 +151,12 @@ def compute_nn_graph(objects, imagename, markers, phenotyping_level='cellType', 
 
     if len(image_cTypes) > 0: # only proceed if there are cells of the specified phenotype level in the image
 
-        features = image_objects[markers].values
+        if rand_features == True:
+            # create dummy features so we can use this method of graph construction
+            features = np.random.rand(len(image_objects), len(markers))
+        else:
+            features = image_objects[markers].values
+
         majorTypes = image_objects['majorType'].values
         cellTypes = image_objects['cellType'].values
         cellClasses = image_objects['cellClass'].values
@@ -171,7 +181,7 @@ def compute_shortest_paths(G, node_ids, source = 0):
 
 def merge_node_ids_to_shortest_paths(shortest_paths, node_ids):
     # node_ids = pandas dataframe with nodeid in integer format as column called 'vertex'
-    node_ids['vertex'] = np.arange(0,len(node_ids.index))
+    node_ids['vertex'] = np.arange(0,len(node_ids.index)) ## changed from node_ids['vertex'] = 27/03/22
     shortest = pd.merge(shortest_paths, node_ids, how='left', on='vertex')
     return shortest
 

@@ -13,11 +13,12 @@ params.PANEL = 'p1'
  * GRAPH ANALYSIS CONFIG PARAMETERS
  */
 
+params.graph_type = 'nearest_neighbour' //neighbouRhood'
 params.neighborhood_input = "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/nextflow/${params.PANEL}/publication/*/results/segmentation/*/*/neighbourhood.csv"
 params.neighbourhood_module_no = 865
 params.md_cuda = "CUDA/10.1.105"
 // params.md_cuda = "CUDA/11.1.1-GCC-10.2.0"
-params.md_conda = "Anaconda3" //"Anaconda3" 
+params.md_conda = "Anaconda3" 
 params.graph_conda_env = "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-0.18"
 params.RELEASE = "development_testing_20220329" //'2022_02_11_release'
 params.CALCULATE_BARRIER = true
@@ -40,7 +41,7 @@ params.METADATA_DELIMITER = '\t'
  */
 
 params.dev = false
-params.number_of_inputs = 1
+params.number_of_inputs = 2
 params.publish_dir_mode = 'copy'
 params.OVERWRITE = true
 params.outdir = '../../results'
@@ -134,6 +135,7 @@ process GRAPH_BARRIER {
 
     input:
     val adj_list from adj_output_ch
+    val imagename from ch_imagenames.splitText().map{x -> x.trim()}
 
     output:
     file "**/*.csv" optional true into ch_barrier_results
@@ -141,12 +143,42 @@ process GRAPH_BARRIER {
     when:
     params.CALCULATE_BARRIER
 
-    """
-    stromal_barrier.py $adj_list ./ ${params.OBJECTS} ${params.PANEL}
-    """
+    script:
+    if (params.graph_type == 'neighbouRhood')
+
+        """
+        stromal_barrier.py --graph_type ${params.graph_type}\
+        --neighbourhood_radius 5 \
+        --adjacency_data_path $adj_list \
+        --root_out ./ \
+        --objects_path ${params.OBJECTS} \
+        --objects_sep '${params.OBJECTS_DELIMITER}' \
+        --panel ${params.PANEL} \
+        --calc_chain True \
+        --barrier_types Myofibroblasts \
+        --phenotyping_level cellType \
+        """
+
+    else if (params.graph_type == 'nearest_neighbour')
+
+        """
+        stromal_barrier.py --graph_type ${params.graph_type} \
+        --imagename $imagename \
+        --neighbours 10 \
+        --root_out ./ \
+        --objects_path ${params.OBJECTS} \
+        --objects_sep '${params.OBJECTS_DELIMITER}' \
+        --panel ${params.PANEL} \
+        --calc_chain True \
+        --barrier_types Myofibroblasts \
+        --phenotyping_level cellType \
+        """
+
+    // """
+    // stromal_barrier.py $adj_list ./ ${params.OBJECTS} ${params.PANEL}
+    // """
 
 }
-
 
 
 process SPATIAL_CLUSTERING {
