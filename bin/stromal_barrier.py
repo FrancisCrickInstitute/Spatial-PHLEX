@@ -9,6 +9,7 @@ from collections import Counter
 import os, sys
 import sb_functions as sb 
 import argparse
+import warnings
 
 def main(args):
 
@@ -30,6 +31,10 @@ def main(args):
     CALC_CHAIN = args.calc_chain # True
     PERMUTE_PHENOTYPES = args.permute_phenotypes #False
     PERMUTATION_REGION = args.permutation_region #'all'
+    EPI_NO_STROMA = False
+    LARGE_CLUSTERS_ONLY = False
+    SIZE_THRESH_NO_UNCLUSTERED = True
+    DOMAIN_SIZE_CUTOFF = args.domain_size_cutoff
     
     if type(args.barrier_types) == list:
         BARRIER_TYPES = args.barrier_types #['Myofibroblasts']
@@ -39,7 +44,6 @@ def main(args):
     print(BARRIER_TYPES)
 
     phenotyping_level = args.phenotyping_level #'cellType' # 'cellType', 'majorType', 'Positive', 'cellClass'
-    EPI_NO_STROMA = False # remove tumour cells not part of large clusters
     
     # Define immune cell subtypes to measure the 'barrier' for:
     cellTypes = ['CD8 T cells'] 
@@ -68,170 +72,176 @@ def main(args):
     print('\nThe unique imagenames in the objects table are:\n')
     print(objects['imagename'].unique())
     
-    if EPI_NO_STROMA == True:
+    if LARGE_CLUSTERS_ONLY:
         # assign distal stroma epithelial cells to unassigned to test
+        objects.loc[(objects['imagename'] == imagename) & (objects['Epithelial cells_cluster_area'] < 2000) & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unclustered Epi'
+    if EPI_NO_STROMA:
         objects.loc[(objects['domain'] == 'Distal Stroma') & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unassigned'
+    
+    if SIZE_THRESH_NO_UNCLUSTERED:
+        # Alter unclustered
+        objects.loc[(objects['Epithelial cells_spatial_cluster_id'] == -1) & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unclustered Epi'
+        # alter those in small clusters:
+        objects.loc[(objects['Epithelial cells_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unclustered Epi'
 
-    if imagename in objects['imagename'].unique():
+    ## after filtering only proceed if there are epithelial cells that pass the criteria, else raise warning:   
+    if len(objects[objects['cellType'] == 'Epithelial cells'].index) > 0:
 
-        if PERMUTE_PHENOTYPES == True:
-            objects = sb.permute_phenotypes(objects, in_place=True, region=PERMUTATION_REGION)
+        if imagename in objects['imagename'].unique():
 
-        objects = sb.assign_cell_categories(objects, typing='new')
-        print(objects)
+            if PERMUTE_PHENOTYPES == True:
+                objects = sb.permute_phenotypes(objects, in_place=True, region=PERMUTATION_REGION)
 
-        # SPECIFY IMC MARKERS:
-        if PANEL == 'p1':
-            markers = ['CD39', 'CD4', 'LAG3', 'casp3', 'CD31', 'CD27', 'CXCR6', 'PDL1', 'CXCR4', 'TCF1', 'CD103', 'GATA3', 'FAP1', 'ICOS', 'Vimentin', 'CD25', 'PD1', 'CD3', 'GITR', 'alphaSMA', 'CD8a', 'CTLA4', 'B2M', 'TIM3', 'Ki67', 'CD57', 'CD45RA', 'CXCL12', 'panCK', 'CCR7', 'Collagen', 'pSTAT1', 'GZMB', 'CD45', 'FOXP3']
-        if PANEL == 'p2':
-            markers = ['CD163', 'CLEC9a', 'KIR2DL3', 'VISTA', 'CD56', 'TIM3', 'CD45', 'CD16', 'MHCII', 'panactin', 'TCRd', 'PD1', 'CD79a', 'CD66b', 'CD14', 'MPO', 'CAIX', 'CD38', 'MCT4', 'CD206', 'IDO', 'CD68', 'PDL1', 'CD20', 'CD11c', 'CD4', 'CD8a', 'CD31', 'LAG3', 'CD103', 'CD11b', 'CD3', 'GZMB', 'panCK', 'CD73']
+            objects = sb.assign_cell_categories(objects, typing='new')
+            print(objects)
+
+            # SPECIFY IMC MARKERS:
+            if PANEL == 'p1':
+                markers = ['CD39', 'CD4', 'LAG3', 'casp3', 'CD31', 'CD27', 'CXCR6', 'PDL1', 'CXCR4', 'TCF1', 'CD103', 'GATA3', 'FAP1', 'ICOS', 'Vimentin', 'CD25', 'PD1', 'CD3', 'GITR', 'alphaSMA', 'CD8a', 'CTLA4', 'B2M', 'TIM3', 'Ki67', 'CD57', 'CD45RA', 'CXCL12', 'panCK', 'CCR7', 'Collagen', 'pSTAT1', 'GZMB', 'CD45', 'FOXP3']
+            if PANEL == 'p2':
+                markers = ['CD163', 'CLEC9a', 'KIR2DL3', 'VISTA', 'CD56', 'TIM3', 'CD45', 'CD16', 'MHCII', 'panactin', 'TCRd', 'PD1', 'CD79a', 'CD66b', 'CD14', 'MPO', 'CAIX', 'CD38', 'MCT4', 'CD206', 'IDO', 'CD68', 'PDL1', 'CD20', 'CD11c', 'CD4', 'CD8a', 'CD31', 'LAG3', 'CD103', 'CD11b', 'CD3', 'GZMB', 'panCK', 'CD73']
 
 
-        ## CREATE SPATIAL GRAPH
-        if GRAPH_TYPE == 'spatial_neighbours':
-            spg = sb.compute_spatial_graph(objects, imagename, markers, radius=RADIUS)
-            G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
-            node_ids = sb.get_graph_node_ids(spg)
-            node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
-        elif GRAPH_TYPE == 'nearest_neighbour':
-            spg = sb.compute_nn_graph(objects, imagename, markers, n_neighs=NEIGHBOURS)
-            G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
-            node_ids = sb.get_graph_node_ids(spg)
-            node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
-        elif GRAPH_TYPE == 'neighbouRhood':
+            ## CREATE SPATIAL GRAPH
+            if GRAPH_TYPE == 'spatial_neighbours':
+                spg = sb.compute_spatial_graph(objects, imagename, markers, radius=RADIUS)
+                G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
+                node_ids = sb.get_graph_node_ids(spg)
+                node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
+            elif GRAPH_TYPE == 'nearest_neighbour':
+                spg = sb.compute_nn_graph(objects, imagename, markers, n_neighs=NEIGHBOURS)
+                G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
+                node_ids = sb.get_graph_node_ids(spg)
+                node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
+            elif GRAPH_TYPE == 'neighbouRhood':
 
-            # specify attributes to attach to nodes:
-            node_attr = ['majorType', 'cellType', 'positive','cellClass']
-            
-            #read in adjacency data to n graph:
-            primary_nodes = [] 
-            with open(ADJACENCY_DATA_PATH,'r') as f:
-                for line in f:
-                    primary_nodes.append(line.split(' ')[0])
-            G = nx.read_adjlist(ADJACENCY_DATA_PATH)
+                # specify attributes to attach to nodes:
+                node_attr = ['majorType', 'cellType', 'positive','cellClass']
 
-            # relabel nodes to seqential integers, but retain dict to keep track of vertexes and celltypes etc
-            int_labels =  [int(i) for i in primary_nodes] # [i for i in range(len(primary_nodes))]
-            G = nx.relabel.convert_node_labels_to_integers(G, first_label=0, label_attribute='label')
-            
-            # create dataframe of node object labels and vertex ids:
-            node_ids = sb.get_node_ids_3(objects, imagename, node_attr, int_labels)
-            node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
-            ## to do: use node attr variable in spatial_neighbour and nearest_enighbour graph construction for flexibility
-        
-        ## Loop through cell types
-        barrier_df_list = []
+                #read in adjacency data to n graph:
+                primary_nodes = [] 
+                with open(ADJACENCY_DATA_PATH,'r') as f:
+                    for line in f:
+                        primary_nodes.append(line.split(' ')[0])
+                G = nx.read_adjlist(ADJACENCY_DATA_PATH)
 
-        for cellType in cellTypes:
-            minimum_paths = []
-            barrier_content = []
-            all_cellchains = []
-            all_vertexes = []
-            all_chain_lengths = []
-            all_degenerate_counts = []
-            all_degenerate_adjacent = []
-            all_vertex_chains = []
+                # relabel nodes to seqential integers, but retain dict to keep track of vertexes and celltypes etc
+                int_labels =  [int(i) for i in primary_nodes] # [i for i in range(len(primary_nodes))]
+                G = nx.relabel.convert_node_labels_to_integers(G, first_label=0, label_attribute='label')
 
-            ## node ids of the target cell type:
-            cellType_node_ids = sb.get_cellType_node_ids(node_ids, 'cellType', cellType)
-            positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
-            print(cellType_node_ids)
-            
-            if len(cellType_node_ids.index) > 0:
+                # create dataframe of node object labels and vertex ids:
+                node_ids = sb.get_node_ids_3(objects, imagename, node_attr, int_labels)
+                node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
+                ## to do: use node attr variable in spatial_neighbour and nearest_enighbour graph construction for flexibility
 
-                ## loop through all cells of the target type:
-                for v in tqdm(cellType_node_ids.vertex, ascii=True):
-                    print(v)
+            ## Loop through cell types
+            barrier_df_list = []
 
-                    if v >= 0: # Starting vertex should be between 0 to number of vertices
+            for cellType in cellTypes:
+                minimum_paths = []
+                barrier_content = []
+                all_cellchains = []
+                all_vertexes = []
+                all_chain_lengths = []
+                all_degenerate_counts = []
+                all_degenerate_adjacent = []
+                all_vertex_chains = []
 
-                        ## compute shortest paths of vertex to all other nodes in the graph:
-                        shortest_paths = sb.compute_shortest_paths(G, node_ids, source=v)
-                    
-                        ## what is the minimum path length to an epithelial cell?
-                        minpath_to_epi = sb.min_path_to_epithelial(shortest_paths)
-                        print("minpath to epi:", minpath_to_epi)
+                ## node ids of the target cell type:
+                cellType_node_ids = sb.get_cellType_node_ids(node_ids, 'cellType', cellType)
+                positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
+                print(cellType_node_ids)
 
-                        # minpath to epi will be call as 1.6..**308 if not connected (skip these)
-                        if minpath_to_epi < 1000:
+                if len(cellType_node_ids.index) > 0:
 
-                            minimum_paths.append(minpath_to_epi)
+                    ## loop through all cells of the target type:
+                    for v in tqdm(cellType_node_ids.vertex, ascii=True):
+                        print(v)
 
-                            closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_epi) & (shortest_paths['cellType'] == 'Epithelial cells')]
-                            degenerate_barrier_fraction = sb.degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
-                            degenerate_adjacent_count = sb.degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
+                        if v >= 0: # Starting vertex should be between 0 to number of vertices
 
-                            all_degenerate_counts.append(degenerate_barrier_fraction)
-                            all_degenerate_adjacent.append(degenerate_adjacent_count)
+                            ## compute shortest paths of vertex to all other nodes in the graph:
+                            shortest_paths = sb.compute_shortest_paths(G, node_ids, source=v)
 
-                            if CALC_CHAIN == True:
-                                ## calculate the 'cell chain' along this path
-                                cellchain, vertexes = sb.followchain(shortest_paths, minpath_to_epi, source_cell=cellType, source_vertex=v, phenotype_level=phenotyping_level)
+                            ## what is the minimum path length to an epithelial cell?
+                            minpath_to_epi = sb.min_path_to_epithelial(shortest_paths)
+                            print("minpath to epi:", minpath_to_epi)
 
-                                all_cellchains.append(cellchain)
-                                all_vertex_chains.append(vertexes)
-                                all_chain_lengths.append(len(cellchain))
-                                n_barrier_cells = sb.count_barrier_cells(cellchain, BARRIER_TYPES)
-                                barrier_content.append(n_barrier_cells)
-                                all_vertexes.append(int(v))
+                            # minpath to epi will be call as 1.6..**308 if not connected (skip these)
+                            if minpath_to_epi < 1000:
 
-                ## construct dataframe of results:
-                barrier_df = pd.DataFrame(data=list(zip(all_chain_lengths, barrier_content, all_degenerate_counts, all_degenerate_adjacent)), columns=['chainlength', 'barrier_content', 'degenerate_barrier_fraction', 'degenerate_adjacent_fraction'])
-                barrier_df['cell_chain'] = all_cellchains
-                barrier_df['vertex_chain'] = all_vertex_chains
-                barrier_df['internal_chainlength'] = barrier_df['chainlength'] - 2
-                barrier_df['barrier_fraction'] = barrier_df['barrier_content'] / barrier_df['internal_chainlength']
-                barrier_df['imagename'] = imagename
-                barrier_df['source_cell'] = cellType
-                barrier_df['target_cell'] = 'Epithelial cells'
-                barrier_df['vertex'] = all_vertexes
+                                minimum_paths.append(minpath_to_epi)
 
-                ## relabel vertexes with object IDs from typing tables:
-                barrier_df['object'] = barrier_df['vertex'].map(node_label_dict) ## remap object ids from vertices
-                barrier_df['object_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, node_label_dict))
+                                closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_epi) & (shortest_paths['cellType'] == 'Epithelial cells')]
+                                degenerate_barrier_fraction = sb.degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
+                                degenerate_adjacent_count = sb.degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
 
-                ## add marker positivity information:
-                barrier_df['positivity_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
+                                all_degenerate_counts.append(degenerate_barrier_fraction)
+                                all_degenerate_adjacent.append(degenerate_adjacent_count)
 
-                ## apply lambda function to calculate barrier score with specific cell types:
-                print(barrier_df)
-                barrier_df['weighted_barrier_content'] = barrier_df.apply(lambda x: sb.weighted_barrier_count(x['cell_chain'], BARRIER_TYPES), axis=1)
-                barrier_df['binary_barrier'] = barrier_df.apply(lambda x: sb.binary_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
-                barrier_df['adjacent_barrier'] = barrier_df.apply(lambda x: sb.adjacent_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
-                barrier_df_list.append(barrier_df)
+                                if CALC_CHAIN == True:
+                                    ## compute the chain of the shortest path to the epithelial cell:
+                                    ## calculate the 'cell chain' along this path
+                                    cellchain, vertexes = sb.followchain(shortest_paths, minpath_to_epi, source_cell=cellType, source_vertex=v, phenotype_level=phenotyping_level)
 
-        if len(barrier_df_list) > 0:
-            ## Concatenate barrier dataframes for all cell types:
-            image_barrier_df = pd.concat(barrier_df_list)
+                                    all_cellchains.append(cellchain)
+                                    all_vertex_chains.append(vertexes)
+                                    all_chain_lengths.append(len(cellchain))
+                                    n_barrier_cells = sb.count_barrier_cells(cellchain, BARRIER_TYPES)
+                                    barrier_content.append(n_barrier_cells)
+                                    all_vertexes.append(int(v))
 
-            print('image_barrier_df', image_barrier_df)
+                    ## construct dataframe of results:
+                    barrier_df = pd.DataFrame(data=list(zip(all_chain_lengths, barrier_content, all_degenerate_counts, all_degenerate_adjacent)), columns=['chainlength', 'barrier_content', 'degenerate_barrier_fraction', 'degenerate_adjacent_fraction'])
+                    barrier_df['cell_chain'] = all_cellchains
+                    barrier_df['vertex_chain'] = all_vertex_chains
+                    barrier_df['internal_chainlength'] = barrier_df['chainlength'] - 2
+                    barrier_df['barrier_fraction'] = barrier_df['barrier_content'] / barrier_df['internal_chainlength']
+                    barrier_df['imagename'] = imagename
+                    barrier_df['source_cell'] = cellType
+                    barrier_df['target_cell'] = 'Epithelial cells'
+                    barrier_df['vertex'] = all_vertexes
 
-            # ## relabel vertexes with object IDs from typing tables:
-            # image_barrier_df['object'] = image_barrier_df['vertex'].map(node_label_dict) ## remap object ids from vertices
-            # image_barrier_df['object_chain'] = image_barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, node_label_dict))
+                    ## relabel vertexes with object IDs from typing tables:
+                    barrier_df['object'] = barrier_df['vertex'].map(node_label_dict) ## remap object ids from vertices
+                    barrier_df['object_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, node_label_dict))
 
-            # ## add marker positivity information:
-            # positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
-            # image_barrier_df['positivity_chain'] = image_barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
+                    ## add marker positivity information:
+                    barrier_df['positivity_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
 
-            # ## apply lambda function to calculate barrier score with specific cell types:
-            # print(image_barrier_df)
-            # image_barrier_df['weighted_barrier_content'] = image_barrier_df.apply(lambda x: sb.weighted_barrier_count(x['cell_chain'], BARRIER_TYPES), axis=1)
-            # image_barrier_df['binary_barrier'] = image_barrier_df.apply(lambda x: sb.binary_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
-            # image_barrier_df['adjacent_barrier'] = image_barrier_df.apply(lambda x: sb.adjacent_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+                    ## apply lambda function to calculate barrier score with specific cell types:
+                    print(barrier_df)
+                    barrier_df['weighted_barrier_content'] = barrier_df.apply(lambda x: sb.weighted_barrier_count(x['cell_chain'], BARRIER_TYPES), axis=1)
+                    barrier_df['binary_barrier'] = barrier_df.apply(lambda x: sb.binary_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+                    barrier_df['adjacent_barrier'] = barrier_df.apply(lambda x: sb.adjacent_barrier_call(x['cell_chain'], BARRIER_TYPES), axis=1)
+                    barrier_df_list.append(barrier_df)
 
-            if PERMUTE_PHENOTYPES == True: 
-                spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_permuted.csv')
+            if len(barrier_df_list) > 0:
+                ## Concatenate barrier dataframes for all cell types:
+                image_barrier_df = pd.concat(barrier_df_list)
 
-            elif EPI_NO_STROMA:
-                spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_no_stroma_epithelial.csv')
-            else:
-                spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
+                print('image_barrier_df', image_barrier_df)
 
-            image_barrier_df.to_csv(spath)
-        
+                if PERMUTE_PHENOTYPES == True: 
+                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_permuted.csv')
+
+                elif EPI_NO_STROMA:
+                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_no_stroma_epithelial.csv')
+                elif LARGE_CLUSTERS_ONLY:
+                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_large_epi_clusters_only.csv')
+                elif SIZE_THRESH_NO_UNCLUSTERED:
+                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_size_thresh_no_unclustered.csv')
+                else:
+                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
+
+                image_barrier_df.to_csv(spath)
+
+        else:
+            warnings.warn(f"There are no typed objects for {imagename}.")
+    
     else:
-        print(f"There are no typed objects for {imagename}.")
+        warnings.warn("No Epithelial cell domains larger than the cutoff criteria. Barrier score will not be measured and no output will be produced.")
+
 
 
 if __name__ == '__main__':
@@ -239,6 +249,7 @@ if __name__ == '__main__':
     # create argument parser
     parser = argparse.ArgumentParser(description = 'Stromal barrier measurement parameters.')
     parser.add_argument('--graph_type', help='connectivity type for cell spatial graph construction')
+    parser.add_argument('--domain_size_cutoff', type = int, help='connectivity type for cell spatial graph construction', default= 2000)
     parser.add_argument('--neighbourhood_radius', type = int, help='Dilation used to determine cell neighbours in neighbouRhood graph')
     parser.add_argument('--adjacency_data_path', help='folder containing adjacency list files in csv format for neighbouRhood graphs')
     parser.add_argument('--radius', type = float, help='radius for spatial neighbours graph')
@@ -247,7 +258,7 @@ if __name__ == '__main__':
     parser.add_argument('--objects_path', help='/path/to/cell objects dataframe.')
     parser.add_argument('--objects_sep', help='Objects file delimiter.')
     parser.add_argument('--panel', help='IMC panel name.')
-    parser.add_argument('--calc_chain', type = bool, help='Calculate the chain of cell objects from the starting cell to the end cell.', default=True)
+    parser.add_argument('--calc_chain', type = bool, help='Calculate the chain of cell objects from the starting cell to the end cell.', default=True) # remove this argument as we always want to calculate the chain
     parser.add_argument('--imagename', help='Name of image in cell objects dataframe')
     parser.add_argument('--permute_phenotypes', type = bool, help='Randomly permute cell phenotypes in a given domain.', default=False)
     parser.add_argument('--permutation_region', help='Domain in which to permute cells. e.g. "tumour" or "stroma. Depends on this information being available in the cell objects table under column "region".')

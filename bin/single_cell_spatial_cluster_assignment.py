@@ -3,11 +3,13 @@
 import os
 from re import I
 import sys
+import argparse
 
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction import img_to_graph
 from tqdm import *
+import skimage.io as io
 
 from spclust_util import (assemble_cluster_polygons, assign_to_spclust,
                           do_clustering, get_image_shape, get_image_shape_from_metadata, plot_clusters,
@@ -16,43 +18,44 @@ from spclust_util import (assemble_cluster_polygons, assign_to_spclust,
 
 class config(object):
 
-    def __init__(self, X, c, p, t, o, o_sep, met, met_sep):
+    def __init__(args):
 
         # study cohort (from command line):
-        self.IMAGENAME = X
+        self.IMAGENAME = args.imagename
 
-        self.COHORT = c
+        # TODO: move cohort and panel to nextflow script and pass root_out constructed from them through command line
+        # self.COHORT = c
 
-        # IMC panel (from command line):
-        self.PANEL = p
-        print(self.COHORT, self.PANEL)
+        # # IMC panel (from command line):
+        # self.PANEL = p
+        # print(self.COHORT, self.PANEL)
 
         # what level of phenotyping, majorType or cellType:
-        self.PHENOTYPING_LEVEL = t #'cellType' 
+        self.PHENOTYPING_LEVEL = args.phenotyping_level
 
         # EPS density parameter:
-        self.EPS = 25
+        self.EPS = args.eps
 
         # minimum samples for clustering
-        self.MIN_S = 0
+        self.MIN_S = args.min_s
 
         # path to dataframe file containing phenotype locations:
-        self.OBJECTS_FILEPATH = o 
+        self.OBJECTS_FILEPATH = args.objects_filepath
 
         # object table separator:
-        self.OBJECT_SEP = o_sep #'\t', or ','
+        self.OBJECT_SEP = args.object_sep
 
         # path to metadata file:
-        self.METADATA = met
+        self.METADATA = args.metadata_filepath
 
         # separator of metadata file:
-        self.MSEP = met_sep
+        self.MSEP = args.metadata_sep
 
         # alphashape curvature parameter:
         self.ALPHA = 0.05  
 
         # base output directory:
-        self.ROOT_OUT_DIR = './single_cell_assignment/{}/{}/{}/dbscan_{}/min_size_{}/alpha_{}'.format(self.COHORT, self.PANEL, self.PHENOTYPING_LEVEL, self.EPS, self.MIN_S, self.ALPHA)
+        self.ROOT_OUTDIR = f'{args.root_outdir}/{args.phenotyping_level}/dbscan_{args.eps}/min_size_{args.min_s}/alpha_{args.alpha}'
 
         
 
@@ -82,6 +85,8 @@ def main(CONFIG):
     # define imagename to be processed:
     imagename = CONFIG.IMAGENAME
 
+    imshape = get_image_shape_from_metadata(metadata, imagename) # (1747,1756) #
+
     # read df:
     phenotype_df = pd.read_csv(CONFIG.OBJECTS_FILEPATH, sep=CONFIG.OBJECT_SEP)
 
@@ -89,11 +94,11 @@ def main(CONFIG):
 
     # define probe cell types and clustering cell types
     probe_cell_types = phenotype_df[CONFIG.PHENOTYPING_LEVEL].unique() 
-    clustering_cell_types = phenotype_df[CONFIG.PHENOTYPING_LEVEL].unique() # ['Epithelial cells'] 
+    clustering_cell_types = phenotype_df[CONFIG.PHENOTYPING_LEVEL].unique() # ['Epithelial cells']
 
     # create base output directory:
-    if os.path.exists(CONFIG.ROOT_OUT_DIR) != True:
-        os.makedirs(CONFIG.ROOT_OUT_DIR)  
+    if os.path.exists(CONFIG.ROOT_OUTDIR) != True:
+        os.makedirs(CONFIG.ROOT_OUTDIR)  
 
     print("probe cell types:", probe_cell_types)
     print("clustering cell types: ", clustering_cell_types)
@@ -104,7 +109,7 @@ def main(CONFIG):
         # PROCESS IMAGE #
                
         # create out directory:
-        out_dir = os.path.join(CONFIG.ROOT_OUT_DIR, '{}_clustering/{}'.format(cType, imagename))
+        out_dir = os.path.join(CONFIG.ROOT_OUTDIR, '{}_clustering/{}'.format(cType, imagename))
         if os.path.exists(out_dir) != True:
             os.makedirs(out_dir)
         
@@ -144,6 +149,11 @@ def main(CONFIG):
             image_df['{}_cluster_area'.format(cType)] = cluster_areas
             image_df['nearest {}_cluster_id'.format(cType)] = nearest_cluster
             image_df['distance to nearest {}_cluster_boundary'.format(cType)] = distances
+
+            # Save alphashape mask:
+            alphashape_spath = os.path.join(out_dir, f'{imagename}_{cType}_alphashape_polygons_label.tiff')
+            pipeline_make_label(alphashape_df, imshape, alphashape_spath)
+
            
         
         else:
@@ -154,6 +164,11 @@ def main(CONFIG):
             image_df['nearest {}_cluster_id'.format(cType)] = -1
             image_df['distance to nearest {}_cluster_boundary'.format(cType)] = np.nan
 
+            # empty alphashape mask:
+            alphashape_mask = np.zeros(imshape)
+            alphashape_spath = os.path.join(out_dir, f'{imagename}_{cType}_alphashape_polygons_label.tiff')
+            io.imsave(alphashape_spath, alphashape_mask)
+
 
         # save dataframes to out_dir:
         spath = os.path.join(out_dir, '{}_object_cluster_assignment.csv'.format(imagename))
@@ -161,18 +176,30 @@ def main(CONFIG):
         print('\n{} done.'.format(imagename))
         
 
-        # PLOT CLUSTERS WITH ALPHASHAPE:
-        imshape = get_image_shape_from_metadata(metadata, imagename) 
+        # PLOT CLUSTERS WITH ALPHASHAPE:         
         plot_clusters(clustering_cells_df, clustering_cells_df['dbscan_cluster'].values, imshape, imagename, cType, out_dir, alphashape_param=CONFIG.ALPHA)
         
-        alphashape_spath = os.path.join(out_dir, f'{imagename}_{cType}_alphashape_polygons_label.tiff')
-        pipeline_make_label(alphashape_df, imshape, alphashape_spath)
-
         print('\nDone.')
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--imagename', type=str, default='test_image', help='name of image to be processed')
+    parser.add_argument('--objects_filepath', type=str, default='test_objects.csv', help='path to objects file')
+    parser.add_argument('--objects_sep', type=str, default=';', help='separator in objects file')
+    parser.add_argument('--metadata_filepath', type=str, default='metadata.txt', help='path to metadata file')
+    parser.add_argument('--metadata_sep', type=str, default='\t', help='separator in metadata file')
+    parser.add_argument('--root_outdir', type=str, default='', help='path to output directory')
+    parser.add_argument('--eps', type=float, default=25, help='eps parameter for dbscan')
+    parser.add_argument('--min_s', type=int, default=0, help='min number of cells in a cluster')
+    parser.add_argument('--alpha', type=float, default=0.05, help='alpha parameter for alphashape')
+    parser.add_argument('--phenotyping_level', type=str, default='cellType', help='what level of phenotyping, majorType or cellType')
+    args = parser.parse_args()
+
+
     # create configuration based on input args:
-    CONFIG = config(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8])
+    CONFIG = config(args)
 
     # pass CONFIG to main():
     main(CONFIG)
