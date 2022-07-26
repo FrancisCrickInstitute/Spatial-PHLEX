@@ -18,7 +18,7 @@ from spclust_util import (assemble_cluster_polygons, assign_to_spclust,
 
 class config(object):
 
-    def __init__(args):
+    def __init__(self, args):
 
         # study cohort (from command line):
         self.IMAGENAME = args.imagename
