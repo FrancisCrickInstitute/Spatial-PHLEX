@@ -5,21 +5,22 @@ process NEIGHBOURHOOD_GRAPH {
 
     // executor "slurm"
 	// time "0.25h"
-	// clusterOptions "--part=cpu --cpus-per-task=4 --mem=2GB"
+	// clusterOptions "--part=cpu --mem=2GB"
 
     module params.md_conda
     conda params.graph_conda_env
 
-    publishDir "${params.outdir}/${params.RELEASE}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
     val nhood_file
+    val nhood_module_no
 
     output:
     path "*/*.txt", emit: adj_output_ch
 
     """
-    cp2nx.py $nhood_file ${params.neighbourhood_module_no} ./
+    cp2nx.py $nhood_file $nhood_module_no .
     """
 }
 
@@ -36,7 +37,7 @@ process GRAPH_BARRIER {
     module params.md_conda
     conda params.graph_conda_env
 
-    publishDir "${params.outdir}/${params.RELEASE}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
     val imagename //from ch_imagenames_post_spclust_b //ch_imagenames.splitText().map{x -> x.trim()} //
@@ -66,6 +67,8 @@ process NEIGHBOURHOOD_BARRIER {
     Run graph barrier scoring for all cell types.
     */
 
+    tag "${imagename}"
+
     executor "slurm"
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
@@ -73,29 +76,29 @@ process NEIGHBOURHOOD_BARRIER {
     module params.md_conda
     conda params.graph_conda_env
 
-    publishDir "${params.outdir}/${params.RELEASE}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
-    val adj_list //from adj_output_ch
-    val imagename //from ch_imagenames_post_spclust_nb //ch_imagenames.splitText().map{x -> x.trim()} //
-    path spclustered_objects //from ch_epi_spclusters_nb
+    tuple val(imagename), path(adj_list)
+    path objects
 
     output:
-    file "**/*.csv" optional true, emit: ch_barrier_results_nb
+    path "**/*.csv" optional true //, emit: ch_barrier_results_nb
 
-    script:
+    shell:
 
-    """
-    stromal_barrier.py --graph_type ${params.graph_type}\
+    '''
+    stromal_barrier.py --graph_type !{params.graph_type}\
+    --imagename !{imagename} \
     --neighbourhood_radius 5 \
-    --adjacency_data_path $adj_list \
-    --root_out ./ \
-    --objects_path $spclustered_objects \
-    --objects_sep '${params.BARRIER_DELIMITER}' \
-    --panel ${params.PANEL} \
+    --adjacency_data_path !{adj_list} \
+    --root_out . \
+    --objects_path !{objects} \
+    --objects_sep $'!{params.OBJECTS_DELIMITER}' \
+    --panel !{params.PANEL} \
     --calc_chain True \
     --barrier_types Myofibroblasts \
     --phenotyping_level cellType \
-    """
+    '''
 
 }

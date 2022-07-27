@@ -22,9 +22,9 @@ def to_adj_string(adj_list):
     return adj_str
 
 def get_imagename(filepath):
-    split = filepath.split('/')
-    imagename = f'{split[-3]}-{split[-2]}'
-    
+    splitpath = filepath.split('/')
+    print(splitpath)
+    imagename = f'{splitpath[-3]}-{splitpath[-2]}'
     return imagename
 
 def write_adj_list(adj_list, imagename, outdir):

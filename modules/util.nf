@@ -1,23 +1,31 @@
+
+/*
+Generate unique imagenames from the cell objects file. 
+*/
 process GENERATE_IMAGENAMES {
 
-    /*
-    Generate unique imagenames from the cell objects file. 
-    */
-
     module params.md_conda
-    conda params.spclust_conda_env
+    conda params.graph_conda_env
 
-    output:
-    stdout, emit: ch_imagenames
- 
+    input:
+        path objects
+
+
+
+    
+    script:
     """
-    #!/usr/bin/env python
-    import pandas as pd
- 
-    objects = pd.read_csv('${params.OBJECTS}', sep='${params.OBJECTS_DELIMITER}', encoding='latin1')
-    imagenames = objects['imagename'].unique().tolist()
-    for imagename in imagenames:
-        print(imagename)
+    echo $objects
     """
 
 }
+
+
+
+// #!/usr/bin/env python
+// import pandas as pd
+
+// objects = pd.read_csv('$objects', sep='$delim', encoding='latin1')
+// imagenames = objects['imagename'].unique().tolist()
+// for imagename in imagenames:
+//     print(imagename)

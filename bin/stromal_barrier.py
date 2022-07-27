@@ -14,6 +14,15 @@ import warnings
 def main(args):
 
     # config:
+    print(args)
+
+    envvars = os.environ
+    for key in envvars:
+        print(key, envvars[key])
+
+    
+    print(sys.version)
+
     GRAPH_TYPE = args.graph_type # 'nearest_neighbour' or 'spatial_neighbours', 'neighbouRhood'
     NEIGHBOURS = args.neighbours# 10
     RADIUS = args.radius # 5
@@ -23,17 +32,17 @@ def main(args):
     OBJECTS_PATH = args.objects_path
     OBJECT_SEP = args.objects_sep #','
     PANEL = args.panel # args[3] #'p2'
-    if GRAPH_TYPE == 'neighbouRhood':
-        imagename = os.path.split(ADJACENCY_DATA_PATH)[1].replace('.txt', '') # args.imagename #
-    else:
-        imagename = args.imagename
+    # if GRAPH_TYPE == 'neighbouRhood':
+    #     imagename = os.path.split(ADJACENCY_DATA_PATH)[1].replace('.txt', '') # args.imagename #
+    # else:
+    imagename = args.imagename
 
     CALC_CHAIN = args.calc_chain # True
     PERMUTE_PHENOTYPES = args.permute_phenotypes #False
     PERMUTATION_REGION = args.permutation_region #'all'
     EPI_NO_STROMA = False
     LARGE_CLUSTERS_ONLY = False
-    SIZE_THRESH_NO_UNCLUSTERED = True
+    SIZE_THRESH_NO_UNCLUSTERED = False
     DOMAIN_SIZE_CUTOFF = args.domain_size_cutoff
     
     if type(args.barrier_types) == list:
@@ -67,10 +76,11 @@ def main(args):
         os.makedirs(RESULTS_DIR, exist_ok=True)
 
     # Read in necessary files:
-    objects = pd.read_csv(OBJECTS_PATH, sep=OBJECT_SEP, encoding='latin1')
+    objects = pd.read_csv(OBJECTS_PATH, sep=OBJECT_SEP, encoding='latin1', quoting=0)
+    print(list(objects))
     print(objects)
     print('\nThe unique imagenames in the objects table are:\n')
-    print(objects['imagename'].unique())
+    print(objects["imagename"].unique())
     
     if LARGE_CLUSTERS_ONLY:
         # assign distal stroma epithelial cells to unassigned to test
@@ -259,7 +269,7 @@ if __name__ == '__main__':
     parser.add_argument('--objects_sep', help='Objects file delimiter.')
     parser.add_argument('--panel', help='IMC panel name.')
     parser.add_argument('--calc_chain', type = bool, help='Calculate the chain of cell objects from the starting cell to the end cell.', default=True) # remove this argument as we always want to calculate the chain
-    parser.add_argument('--imagename', help='Name of image in cell objects dataframe')
+    parser.add_argument('--imagename', type = str, help='Name of image in cell objects dataframe')
     parser.add_argument('--permute_phenotypes', type = bool, help='Randomly permute cell phenotypes in a given domain.', default=False)
     parser.add_argument('--permutation_region', help='Domain in which to permute cells. e.g. "tumour" or "stroma. Depends on this information being available in the cell objects table under column "region".')
     parser.add_argument('--barrier_types', nargs='+', help='Cell types to assign as barrier cells e.g. Myofibroblasts. Multiple arguments accepted e.g. --barrier_types Myofibroblasts Fibroblasts.')
