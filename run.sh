@@ -19,10 +19,12 @@ ml Nextflow/22.04.0
 #     --OBJECTS_DELIMITER ',' \
 
 nextflow run ./test.nf \
+    --workflow_name 'spatial_clustering'\
+    --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --OBJECTS "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt" \
     --PANEL 'p1' \
     --CALCULATE_BARRIER true \
-    --PHENOTYPING_LEVELS 'cellType_majorType' \
+    --PHENOTYPING_LEVELS 'cellType' \
     --OBJECTS_DELIMITER '\t' \
     --BARRIER_DELIMITER "\t" \
     --graph_type 'neighbouRhood' \
@@ -33,4 +35,10 @@ nextflow run ./test.nf \
     --release '2022-07-01_DSL2_dev' \
     --publish_dir_mode 'copy' \
     --OVERWRITE true \
+    --METADATA '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
+    --METADATA_DELIMITER '\t'\
     -resume
+
+
+
+    #'cellType_majorType'

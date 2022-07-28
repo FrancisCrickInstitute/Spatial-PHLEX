@@ -43,7 +43,7 @@ class config(object):
         self.OBJECTS_FILEPATH = args.objects_filepath
 
         # object table separator:
-        self.OBJECT_SEP = args.object_sep
+        self.OBJECT_SEP = args.objects_sep
 
         # path to metadata file:
         self.METADATA = args.metadata_filepath
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     parser.add_argument('--objects_sep', type=str, default=';', help='separator in objects file')
     parser.add_argument('--metadata_filepath', type=str, default='metadata.txt', help='path to metadata file')
     parser.add_argument('--metadata_sep', type=str, default='\t', help='separator in metadata file')
-    parser.add_argument('--root_outdir', type=str, default='', help='path to output directory')
+    parser.add_argument('--root_outdir', type=str, default='.', help='path to output directory')
     parser.add_argument('--eps', type=float, default=25, help='eps parameter for dbscan')
     parser.add_argument('--min_s', type=int, default=0, help='min number of cells in a cluster')
     parser.add_argument('--alpha', type=float, default=0.05, help='alpha parameter for alphashape')

@@ -6,7 +6,7 @@ nextflow.enable.dsl=2
 *********************************************/
 
 include {NEIGHBOURHOOD_WF; NEAREST_NEIGHBOUR_WF} from './workflows/barrier.nf'
-
+include {SPATIAL_CLUSTERING_WF } from './workflows/spatial.nf'
 /*
 COHORT PARAMETERS
 */
@@ -51,6 +51,7 @@ params.publish_dir_mode = 'copy'
 params.OVERWRITE = true
 params.outdir = '../../results'
 project_dir = projectDir
+params.workflow_name = 'spatial_clustering'
 
 // directly create a list channel for phenotyping levels for combinatoric input of phenotype levels and imagenames
 pheno_list = params.PHENOTYPING_LEVELS?.tokenize(',')
@@ -68,11 +69,23 @@ if (params.neighborhood_input) {
    exit 1, "Neighbourhood input file not specified!"
 }
 
+ch_phenotyping = ch_phenotyping.first()
 
 workflow {
 
-    if (params.graph_type == 'neighbouRhood') {
-        NEIGHBOURHOOD_WF ( ch_nhood, params.neighbourhood_module_no, params.OBJECTS, params.OBJECTS_DELIMITER)
+    if (params.workflow_name == 'stromal_barrier_only') {
+
+        if (params.graph_type == 'neighbouRhood') {
+            NEIGHBOURHOOD_WF ( ch_nhood, params.neighbourhood_module_no, params.OBJECTS, params.OBJECTS_DELIMITER)
+        }
+        if (params.graph_type == 'nearest_neighbour') {
+            NEAREST_NEIGHBOUR_WF ( ch_nhood, params.neighbourhood_module_no, params.OBJECTS, params.OBJECTS_DELIMITER)
+        }
     }
+
+    if (params.workflow_name == 'spatial_clustering') {
+        SPATIAL_CLUSTERING_WF ( params.OBJECTS, ch_phenotyping)
+    }
+    
 
 }

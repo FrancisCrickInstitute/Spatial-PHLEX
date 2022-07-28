@@ -10,22 +10,15 @@ process GENERATE_IMAGENAMES {
     input:
         path objects
 
-
-
+    output:
+        stdout emit: imagenames
     
-    script:
-    """
-    echo $objects
-    """
+    shell:
+    '''
+    generate_imagenames.py --objects '!{objects}' --delimiter $'!{params.OBJECTS_DELIMITER}'
+    '''
 
 }
 
 
 
-// #!/usr/bin/env python
-// import pandas as pd
-
-// objects = pd.read_csv('$objects', sep='$delim', encoding='latin1')
-// imagenames = objects['imagename'].unique().tolist()
-// for imagename in imagenames:
-//     print(imagename)
