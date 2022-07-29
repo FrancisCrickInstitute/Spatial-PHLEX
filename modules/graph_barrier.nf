@@ -40,26 +40,26 @@ process GRAPH_BARRIER {
     publishDir "${params.outdir}/${params.release}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
-    val imagename //from ch_imagenames_post_spclust_b //ch_imagenames.splitText().map{x -> x.trim()} //
-    path spclustered_objects //from ch_epi_spclusters_b
+        tuple val(imagename), path(spclustered_objects)
+        
 
     output:
-    file "**/*.csv" optional true, emit: ch_barrier_results_b
+        path "**/*.csv", emit: ch_barrier_results, optional: true
 
-    script:
+    shell:
 
-    """
-    stromal_barrier.py --graph_type ${params.graph_type} \
-    --imagename $imagename \
-    --neighbours 10 \
-    --root_out ./ \
-    --objects_path $spclustered_objects \
-    --objects_sep '${params.BARRIER_DELIMITER}' \
-    --panel ${params.PANEL} \
-    --calc_chain True \
-    --barrier_types Myofibroblasts \
-    --phenotyping_level cellType \
-    """
+    '''
+    stromal_barrier.py --graph_type !{params.graph_type} \
+        --imagename !{imagename} \
+        --neighbours 10 \
+        --root_out . \
+        --objects_path !{spclustered_objects} \
+        --objects_sep $'!{params.BARRIER_DELIMITER}' \
+        --panel !{params.PANEL} \
+        --calc_chain True \
+        --barrier_types Myofibroblasts \
+        --phenotyping_level cellType \
+    '''
 }
 
 process NEIGHBOURHOOD_BARRIER {

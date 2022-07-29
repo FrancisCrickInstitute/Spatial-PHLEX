@@ -13,16 +13,6 @@ import warnings
 
 def main(args):
 
-    # config:
-    print(args)
-
-    envvars = os.environ
-    for key in envvars:
-        print(key, envvars[key])
-
-    
-    print(sys.version)
-
     GRAPH_TYPE = args.graph_type # 'nearest_neighbour' or 'spatial_neighbours', 'neighbouRhood'
     NEIGHBOURS = args.neighbours# 10
     RADIUS = args.radius # 5
