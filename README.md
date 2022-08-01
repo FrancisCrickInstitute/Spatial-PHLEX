@@ -3,7 +3,9 @@ Nextflow pipeline for IMC spatial data methods.
 
 # Inputs
 - `cell_objects.csv`
+    A plaintext, delimited file containing single cell-level coordinate data for a set of images, plus their phenotypic identities.
 - `metadata.csv`
+    A plaintext, delimited file containing metadata information about the images in `cell_objects.csv`. To run the pipeline this file must contain,f or each image, an image identifier ('imagename'), and the width and height in pixels for every image as columns with the header `'image_width'` and `'image_height'`.
 
 # Workflow options
 Spatial-PHLEX can be run in multiple modes:
@@ -29,9 +31,9 @@ nextflow run ./main.nf \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \
     --outdir '../../results' \
-    --publish_dir_mode 'copy' \
     --release '2022-08-30_DSL2_dev_b' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
-    --workflow_name 'default'
+    --workflow_name 'default' \
+    --dev \
     -resume
 ```
