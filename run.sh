@@ -29,10 +29,10 @@ nextflow run ./main.nf \
     --md_conda 'Anaconda3' \
     --outdir '../../results' \
     --publish_dir_mode 'copy' \
-    --release '2022-08-30_DSL2_dev' \
+    --release '2022-08-30_DSL2_dev_b' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
-    # -resume
+    -resume
 
 
 

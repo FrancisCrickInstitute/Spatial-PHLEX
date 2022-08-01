@@ -70,15 +70,15 @@ def main(args):
     
     if LARGE_CLUSTERS_ONLY:
         # assign distal stroma epithelial cells to unassigned to test
-        objects.loc[(objects['imagename'] == imagename) & (objects[f'{target_cell_type}_cluster_area'] < 2000) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unclustered Epi'
+        objects.loc[(objects['imagename'] == imagename) & (objects[f'{target_cell_type}_cluster_area'] < 2000) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = f'Unclustered {target_cell_type}'
     if EPI_NO_STROMA:
         objects.loc[(objects['domain'] == 'Distal Stroma') & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unassigned'
     
     if SIZE_THRESH_NO_UNCLUSTERED:
         # Alter unclustered
-        objects.loc[(objects[f'{target_cell_type}_spatial_cluster_id'] == -1) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unclustered Epi'
+        objects.loc[(objects[f'{target_cell_type}_spatial_cluster_id'] == -1) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = f'Unclustered {target_cell_type}'
         # alter those in small clusters:
-        objects.loc[(objects[f'{target_cell_type}_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unclustered Epi'
+        objects.loc[(objects[f'{target_cell_type}_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = f'Unclustered {target_cell_type}'
 
     ## after filtering only proceed if there are epithelial cells that pass the criteria, else raise warning:   
     if len(objects[objects['cellType'] == f'{target_cell_type}'].index) > 0:

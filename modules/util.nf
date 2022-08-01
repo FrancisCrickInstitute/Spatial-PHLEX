@@ -43,8 +43,9 @@ def print_logo(){
 }
 
 def check_params() {
-
+    println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     println "\nExecuting pipeline with the following parameters:"
     params.each{ k, v -> println "params.${k.padRight(25)} = ${v}" }
+    println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
 }

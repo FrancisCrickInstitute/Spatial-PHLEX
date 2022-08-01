@@ -52,7 +52,8 @@ process GRAPH_BARRIER {
     shell:
         '''
         stromal_barrier.py --graph_type !{params.graph_type} \
-            --source_cell_type !{params.barrier_source_cell_type} \
+            --source_cell_type '!{params.barrier_source_cell_type}' \
+            --target_cell_type '!{params.barrier_target_cell_type}' \
             --imagename !{imagename} \
             --neighbours 10 \
             --root_out . \
@@ -60,7 +61,7 @@ process GRAPH_BARRIER {
             --objects_sep $'!{params.BARRIER_DELIMITER}' \
             --panel !{params.PANEL} \
             --calc_chain True \
-            --barrier_types Myofibroblasts \
+            --barrier_types '!{params.barrier_cell_type}' \
             --phenotyping_level !{params.barrier_phenotyping_level} \
         '''
 }
