@@ -8,11 +8,11 @@ Nextflow pipeline for IMC spatial data methods.
 # Workflow options
 Spatial-PHLEX can be run in multiple modes:
 - 'default'
-- - The default pipeline. This performs density-based spatial clustering of all cell types in the objects dataframe. Subsequently, graph-based barrier scoring is executed for a defined, source (e.g. CD8 T cells), target (e.g. Epithelial cells), and barrier (e.g. Myofibroblasts) cell type.
+    - The default pipeline. This performs density-based spatial clustering of all cell types in the objects dataframe. Subsequently, graph-based barrier scoring is executed for a defined, source (e.g. CD8 T cells), target (e.g. Epithelial cells), and barrier (e.g. Myofibroblasts) cell type.
 - 'spatial_clustering'
-- - Performs only spatial clustering, for all cell types identified in the cell objects dataframe.
+    - Performs only spatial clustering, for all cell types identified in the cell objects dataframe.
 - 'barrier_only'
-- - Performs graph-based barrier scoring without performing spatial clustering.
+    - Performs graph-based barrier scoring without performing spatial clustering.
 
 # Example Usage
 
