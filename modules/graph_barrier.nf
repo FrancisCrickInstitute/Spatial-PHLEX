@@ -44,7 +44,7 @@ process GRAPH_BARRIER {
         
 
     output:
-        path "**/*.csv", emit: ch_barrier_results, optional: true
+        path "${params.graph_type}/*/*/*.csv", emit: ch_barrier_results, optional: true
 
     shell:
 
@@ -79,11 +79,11 @@ process NEIGHBOURHOOD_BARRIER {
     publishDir "${params.outdir}/${params.release}/graph/barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
 
     input:
-    tuple val(imagename), path(adj_list)
-    path objects
+        tuple val(imagename), path(adj_list)
+        path objects
 
     output:
-    path "**/*.csv" optional true //, emit: ch_barrier_results_nb
+        path "**/*.csv" optional true //, emit: ch_barrier_results_nb
 
     shell:
 

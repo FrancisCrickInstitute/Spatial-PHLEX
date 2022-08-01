@@ -12,27 +12,28 @@ ml purge
 ml Nextflow/22.04.0
 
 
-nextflow run ./test.nf \
-    --workflow_name 'default' \ #'spatial_clustering', 'default'
-    --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
-    --OBJECTS "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt" \
-    --PANEL 'p1' \
-    --CALCULATE_BARRIER true \
-    --PHENOTYPING_LEVELS 'cellType' \
-    --OBJECTS_DELIMITER '\t' \
+nextflow run ./main.nf \
     --BARRIER_DELIMITER ',' \
-    --graph_type 'nearest_neighbour' \
-    --dev \
-    --graph_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-22.02" \
-    --md_conda 'Anaconda3' \
-    --outdir '../../results' \
-    --release '2022-07-29_DSL2_dev_b' \
-    --publish_dir_mode 'copy' \
-    --OVERWRITE true \
+    --CALCULATE_BARRIER true \
     --METADATA '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
     --METADATA_DELIMITER '\t'\
-    # -resume
+    --OBJECTS "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt" \
+    --OBJECTS_DELIMITER '\t' \
+    --OVERWRITE true \
+    --PANEL 'p1' \
+    --PHENOTYPING_LEVELS 'cellType' \
+    --dev \
+    --graph_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-22.02" \
+    --graph_type 'nearest_neighbour' \
+    --md_conda 'Anaconda3' \
+    --outdir '../../results' \
+    --publish_dir_mode 'copy' \
+    --release '2022-07-29_DSL2_dev_c' \
+    --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
+    --workflow_name 'default' \
+    -resume
 
 
 
     #'cellType_majorType'
+    #'spatial_clustering', 'default'
