@@ -1,4 +1,4 @@
-include { NEIGHBOURHOOD_GRAPH; NEIGHBOURHOOD_BARRIER } from '../modules/graph_barrier.nf'
+include { NEIGHBOURHOOD_GRAPH; NEIGHBOURHOOD_BARRIER; NN_BARRIER} from '../modules/graph_barrier.nf'
 include { GENERATE_IMAGENAMES } from '../modules/util.nf'
 
 def generate_imagenames(file){
@@ -38,16 +38,20 @@ workflow NEAREST_NEIGHBOUR_WF {
 
   
     take:
-        nhood_file
-        imagename
         cell_objects
-    
 
+   
     main:
-        
-        //Run the graph barrier algorithm with neighrbouRhood graph constructed from the cell objects:
-        NEIGHBOURHOOD_GRAPH(nhood_file)
 
-        NEIGHBOURHOOD_BARRIER(NEIGHBOURHOOD_GRAPH.adj_output_ch, imagename, cell_objects)
+        // Generate imagenames from cell_objects dataframe:
+        GENERATE_IMAGENAMES(cell_objects)
+
+        // convert stdout to a channel of a list of strings
+        imagenames = GENERATE_IMAGENAMES.out.imagenames
+        imagenames = imagenames.splitText().map{x -> x.trim()}
+                                .take( params.dev ? params.number_of_inputs : -1 )
+
+        // Pass epithelial spatial clusters to the barrier module:
+        NN_BARRIER(cell_objects, imagenames)
 
 }

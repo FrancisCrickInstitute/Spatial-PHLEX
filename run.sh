@@ -13,13 +13,10 @@ ml Nextflow/22.04.0
 
 
 nextflow run ./main.nf \
-    --BARRIER_DELIMITER ',' \
-    --CALCULATE_BARRIER true \
     --METADATA '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
     --METADATA_DELIMITER '\t'\
     --OBJECTS "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt" \
-    --OBJECTS_DELIMITER '\t' \
-    --OVERWRITE true \
+    --objects_delimiter '\t'\
     --PANEL 'p1' \
     --PHENOTYPING_LEVELS 'cellType' \
     --barrier_phenotyping_level 'cellType' \
@@ -32,7 +29,7 @@ nextflow run ./main.nf \
     --release '2022-08-30_DSL2_dev_b' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
-    -resume
+    # -resume
 
 
 

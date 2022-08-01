@@ -21,6 +21,7 @@ workflow SPATIAL_CLUSTERING_WF {
         // convert stdout to a channel of a list of strings
         imagenames = GENERATE_IMAGENAMES.out.imagenames
         imagenames = imagenames.splitText().map{x -> x.trim()}
+                                .take( params.dev ? params.number_of_inputs : -1 )
 
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)

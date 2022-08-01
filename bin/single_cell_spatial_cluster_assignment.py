@@ -172,7 +172,7 @@ def main(CONFIG):
 
         # save dataframes to out_dir:
         spath = os.path.join(out_dir, '{}_object_cluster_assignment.csv'.format(imagename))
-        image_df.to_csv(spath)
+        image_df.to_csv(spath, sep=CONFIG.OBJECT_SEP)
         print('\n{} done.'.format(imagename))
         
 

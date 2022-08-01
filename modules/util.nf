@@ -15,7 +15,7 @@ process GENERATE_IMAGENAMES {
     
     shell:
     '''
-    generate_imagenames.py --objects '!{objects}' --delimiter $'!{params.OBJECTS_DELIMITER}'
+    generate_imagenames.py --objects '!{objects}' --delimiter $'!{params.objects_delimiter}'
     '''
 
 }

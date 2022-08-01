@@ -36,7 +36,7 @@ process SPATIAL_CLUSTERING {
         single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
             --phenotyping_level !{level} \
             --objects_filepath !{objects} \
-            --objects_sep $'!{params.OBJECTS_DELIMITER}' \
+            --objects_sep $'!{params.objects_delimiter}' \
             --metadata_filepath !{params.METADATA} \
             --metadata_sep $'!{params.METADATA_DELIMITER}' \
             --root_outdir .

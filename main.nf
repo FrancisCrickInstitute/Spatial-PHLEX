@@ -34,22 +34,24 @@ workflow {
     print_logo()
     check_params()
     
-    if (params.workflow_name == 'stromal_barrier_only') {
-
-        if (params.graph_type == 'neighbouRhood') {
-            NEIGHBOURHOOD_WF ( ch_nhood, params.neighbourhood_module_no, params.OBJECTS, params.OBJECTS_DELIMITER)
-        }
-        if (params.graph_type == 'nearest_neighbour') {
-            NEAREST_NEIGHBOUR_WF ( ch_nhood, params.neighbourhood_module_no, params.OBJECTS, params.OBJECTS_DELIMITER)
-        }
+    if (params.workflow_name == 'default') {
+        CLUSTERED_BARRIER_WF ( params.OBJECTS, ch_phenotyping)
     }
 
     if (params.workflow_name == 'spatial_clustering') {
         SPATIAL_CLUSTERING_WF ( params.OBJECTS, ch_phenotyping)
     }
-    
-    if (params.workflow_name == 'default') {
-        CLUSTERED_BARRIER_WF ( params.OBJECTS, ch_phenotyping)
+
+    if (params.workflow_name == 'barrier_only') {
+
+        if (params.graph_type == 'neighbouRhood') {
+            NEIGHBOURHOOD_WF ( ch_nhood, params.neighbourhood_module_no, params.OBJECTS, params.objects_delimiter)
+        }
+        if (params.graph_type == 'nearest_neighbour') {
+            NEAREST_NEIGHBOUR_WF (params.OBJECTS)
+        }
     }
+
+    
 
 }
