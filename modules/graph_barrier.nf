@@ -52,6 +52,7 @@ process GRAPH_BARRIER {
     shell:
         '''
         stromal_barrier.py --graph_type !{params.graph_type} \
+            --source_cell_type !{params.barrier_source_cell_type} \
             --imagename !{imagename} \
             --neighbours 10 \
             --root_out . \

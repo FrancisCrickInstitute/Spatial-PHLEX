@@ -22,9 +22,6 @@ def main(args):
     OBJECTS_PATH = args.objects_path
     OBJECT_SEP = args.objects_sep #','
     PANEL = args.panel # args[3] #'p2'
-    # if GRAPH_TYPE == 'neighbouRhood':
-    #     imagename = os.path.split(ADJACENCY_DATA_PATH)[1].replace('.txt', '') # args.imagename #
-    # else:
     imagename = args.imagename
 
     CALC_CHAIN = args.calc_chain # True
@@ -34,6 +31,7 @@ def main(args):
     LARGE_CLUSTERS_ONLY = False
     SIZE_THRESH_NO_UNCLUSTERED = False
     DOMAIN_SIZE_CUTOFF = args.domain_size_cutoff
+    target_cell_type = args.target_cell_type
     
     if type(args.barrier_types) == list:
         BARRIER_TYPES = args.barrier_types #['Myofibroblasts']
@@ -45,7 +43,7 @@ def main(args):
     phenotyping_level = args.phenotyping_level #'cellType' # 'cellType', 'majorType', 'Positive', 'cellClass'
     
     # Define immune cell subtypes to measure the 'barrier' for:
-    cellTypes = ['CD8 T cells'] 
+    cellTypes = [args.source_cell_type] #['Myofibroblasts'] #['Myofibroblasts', 'Stromal', 'Endothelial']
     '''['CD4 T cells', 'CD4 T cells', 'CD57+ CD4 T cells', 'Naive CD4 T cells',
        'Leukocytes - Other', 'CD4+ Myeloid cells', 'Cytotoxic CD8 T cells',
        'CD4 Tcm', 'Tregs', 'CD8 Trm', 'CD8 T cells', 'CD57+ CD8 Trm',
@@ -67,25 +65,23 @@ def main(args):
 
     # Read in necessary files:
     objects = pd.read_csv(OBJECTS_PATH, sep=OBJECT_SEP, encoding='latin1', quoting=0)
-    print(list(objects))
-    print(objects)
     print('\nThe unique imagenames in the objects table are:\n')
     print(objects["imagename"].unique())
     
     if LARGE_CLUSTERS_ONLY:
         # assign distal stroma epithelial cells to unassigned to test
-        objects.loc[(objects['imagename'] == imagename) & (objects['Epithelial cells_cluster_area'] < 2000) & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unclustered Epi'
+        objects.loc[(objects['imagename'] == imagename) & (objects[f'{target_cell_type}_cluster_area'] < 2000) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unclustered Epi'
     if EPI_NO_STROMA:
-        objects.loc[(objects['domain'] == 'Distal Stroma') & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unassigned'
+        objects.loc[(objects['domain'] == 'Distal Stroma') & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unassigned'
     
     if SIZE_THRESH_NO_UNCLUSTERED:
         # Alter unclustered
-        objects.loc[(objects['Epithelial cells_spatial_cluster_id'] == -1) & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unclustered Epi'
+        objects.loc[(objects[f'{target_cell_type}_spatial_cluster_id'] == -1) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unclustered Epi'
         # alter those in small clusters:
-        objects.loc[(objects['Epithelial cells_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects['cellType'] == 'Epithelial cells'), 'cellType'] = 'Unclustered Epi'
+        objects.loc[(objects[f'{target_cell_type}_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unclustered Epi'
 
     ## after filtering only proceed if there are epithelial cells that pass the criteria, else raise warning:   
-    if len(objects[objects['cellType'] == 'Epithelial cells'].index) > 0:
+    if len(objects[objects['cellType'] == f'{target_cell_type}'].index) > 0:
 
         if imagename in objects['imagename'].unique():
 
@@ -172,7 +168,7 @@ def main(args):
 
                                 minimum_paths.append(minpath_to_epi)
 
-                                closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_epi) & (shortest_paths['cellType'] == 'Epithelial cells')]
+                                closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_epi) & (shortest_paths['cellType'] == f'{target_cell_type}')]
                                 degenerate_barrier_fraction = sb.degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
                                 degenerate_adjacent_count = sb.degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
 
@@ -199,7 +195,7 @@ def main(args):
                     barrier_df['barrier_fraction'] = barrier_df['barrier_content'] / barrier_df['internal_chainlength']
                     barrier_df['imagename'] = imagename
                     barrier_df['source_cell'] = cellType
-                    barrier_df['target_cell'] = 'Epithelial cells'
+                    barrier_df['target_cell'] = f'{target_cell_type}'
                     barrier_df['vertex'] = all_vertexes
 
                     ## relabel vertexes with object IDs from typing tables:
@@ -248,22 +244,24 @@ if __name__ == '__main__':
 
     # create argument parser
     parser = argparse.ArgumentParser(description = 'Stromal barrier measurement parameters.')
-    parser.add_argument('--graph_type', help='connectivity type for cell spatial graph construction')
-    parser.add_argument('--domain_size_cutoff', type = int, help='connectivity type for cell spatial graph construction', default= 2000)
-    parser.add_argument('--neighbourhood_radius', type = int, help='Dilation used to determine cell neighbours in neighbouRhood graph')
     parser.add_argument('--adjacency_data_path', help='folder containing adjacency list files in csv format for neighbouRhood graphs')
-    parser.add_argument('--radius', type = float, help='radius for spatial neighbours graph')
+    parser.add_argument('--barrier_types', nargs='+', help='Cell types to assign as barrier cells e.g. Myofibroblasts. Multiple arguments accepted e.g. --barrier_types Myofibroblasts Fibroblasts.')
+    parser.add_argument('--calc_chain', type = bool, help='Calculate the chain of cell objects from the starting cell to the end cell.', default=True) # remove this argument as we always want to calculate the chain
+    parser.add_argument('--domain_size_cutoff', type = int, help='connectivity type for cell spatial graph construction', default= 2000)
+    parser.add_argument('--graph_type', help='connectivity type for cell spatial graph construction')
+    parser.add_argument('--imagename', type = str, help='Name of image in cell objects dataframe')
+    parser.add_argument('--neighbourhood_radius', type = int, help='Dilation used to determine cell neighbours in neighbouRhood graph')
     parser.add_argument('--neighbours', type = int, help='number of neighbours for nearest neighbour graph')
-    parser.add_argument('--root_out', help='Root output directory for saving.')
     parser.add_argument('--objects_path', help='/path/to/cell objects dataframe.')
     parser.add_argument('--objects_sep', help='Objects file delimiter.')
     parser.add_argument('--panel', help='IMC panel name.')
-    parser.add_argument('--calc_chain', type = bool, help='Calculate the chain of cell objects from the starting cell to the end cell.', default=True) # remove this argument as we always want to calculate the chain
-    parser.add_argument('--imagename', type = str, help='Name of image in cell objects dataframe')
-    parser.add_argument('--permute_phenotypes', type = bool, help='Randomly permute cell phenotypes in a given domain.', default=False)
     parser.add_argument('--permutation_region', help='Domain in which to permute cells. e.g. "tumour" or "stroma. Depends on this information being available in the cell objects table under column "region".')
-    parser.add_argument('--barrier_types', nargs='+', help='Cell types to assign as barrier cells e.g. Myofibroblasts. Multiple arguments accepted e.g. --barrier_types Myofibroblasts Fibroblasts.')
+    parser.add_argument('--permute_phenotypes', type = bool, help='Randomly permute cell phenotypes in a given domain.', default=False)
     parser.add_argument('--phenotyping_level', help='Designation of the objects table column to use to determine phenotypes e.g. majorType or cellType, but depends can be other depending on columns in objects.csv')
+    parser.add_argument('--radius', type = float, help='radius for spatial neighbours graph')
+    parser.add_argument('--root_out', help='Root output directory for saving.')
+    parser.add_argument('--source_cell_type', help='source cell type for the shortest path calculation', default='CD8 T cells')
+    parser.add_argument('--target_cell_type', help='target cell type for the shortest path calculation', default='Epithelial cells')
     args = parser.parse_args()
 
     # pass command line arguments to main:

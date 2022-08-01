@@ -50,6 +50,7 @@ workflow {
     
     if (params.workflow_name == 'default') {
         CLUSTERED_BARRIER_WF ( params.OBJECTS, ch_phenotyping)
+        CLUSTERED_BARRIER_WF.GRAPH_BARRIER.out.ch_barrier_results.collectFile('barrier_results.csv', keepHeader: true, skip: 1)
     }
 
 }

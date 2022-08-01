@@ -1,7 +1,7 @@
 # rubicon-sppipeline
 Nextflow pipeline for IMC spatial data methods.
 
-# Usage
+# Example Usage
 
 ```
 nextflow run ./main.nf \
@@ -15,7 +15,6 @@ nextflow run ./main.nf \
     --PANEL 'p1' \
     --PHENOTYPING_LEVELS 'cellType' \
     --barrier_phenotyping_level 'cellType' \
-    --dev \
     --graph_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-22.02" \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \
