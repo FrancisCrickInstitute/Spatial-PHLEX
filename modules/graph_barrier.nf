@@ -10,7 +10,7 @@ process NEIGHBOURHOOD_GRAPH {
     module params.md_conda
     conda params.graph_conda_env
 
-    publishDir "${params.outdir}/${params.release}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         val nhood_file
@@ -40,7 +40,7 @@ process GRAPH_BARRIER {
     module params.md_conda
     conda params.graph_conda_env
 
-    publishDir "${params.outdir}/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         tuple val(imagename), path(spclustered_objects)
@@ -81,7 +81,7 @@ process NN_BARRIER {
     module params.md_conda
     conda params.graph_conda_env
 
-    publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         path objects
@@ -122,7 +122,7 @@ process NEIGHBOURHOOD_BARRIER {
     module params.md_conda
     conda params.graph_conda_env
 
-    publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         tuple val(imagename), path(adj_list)

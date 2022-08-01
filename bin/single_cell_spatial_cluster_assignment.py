@@ -46,7 +46,7 @@ class config(object):
         self.OBJECT_SEP = args.objects_sep
 
         # path to metadata file:
-        self.METADATA = args.metadata_filepath
+        self.metadata = args.metadata_filepath
 
         # separator of metadata file:
         self.MSEP = args.metadata_sep
@@ -80,7 +80,7 @@ def main(CONFIG):
     CONFIG.display()
 
     # read metadata
-    metadata = pd.read_csv(CONFIG.METADATA, sep = CONFIG.MSEP)
+    metadata = pd.read_csv(CONFIG.metadata, sep = CONFIG.MSEP)
     
     # define imagename to be processed:
     imagename = CONFIG.IMAGENAME

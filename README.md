@@ -18,14 +18,14 @@ Spatial-PHLEX can be run in multiple modes:
 
 # Example Usage
 
-```
+```bash
 nextflow run ./main.nf \
-    --METADATA '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
-    --METADATA_DELIMITER '\t'\
-    --OBJECTS "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt" \
+    --metadata '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
+    --metadata_delimiter '\t'\
+    --objects "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt" \
     --objects_delimiter '\t'\
     --PANEL 'p1' \
-    --PHENOTYPING_LEVELS 'cellType' \
+    --phenotyping_level 'cellType' \
     --barrier_phenotyping_level 'cellType' \
     --graph_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-22.02" \
     --graph_type 'nearest_neighbour' \

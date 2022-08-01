@@ -12,7 +12,7 @@ include { print_logo; check_params } from './modules/util.nf'
 project_dir = projectDir
 
 // directly create a list channel for phenotyping levels for combinatoric input of phenotype levels and imagenames
-pheno_list = params.PHENOTYPING_LEVELS?.tokenize(',')
+pheno_list = params.phenotyping_level?.tokenize(',')
 ch_phenotyping = Channel.fromList(pheno_list)
 
 // channel for neighbourhood input csv files
@@ -35,20 +35,20 @@ workflow {
     check_params()
     
     if (params.workflow_name == 'default') {
-        CLUSTERED_BARRIER_WF ( params.OBJECTS, ch_phenotyping)
+        CLUSTERED_BARRIER_WF ( params.objects, ch_phenotyping)
     }
 
     if (params.workflow_name == 'spatial_clustering') {
-        SPATIAL_CLUSTERING_WF ( params.OBJECTS, ch_phenotyping)
+        SPATIAL_CLUSTERING_WF ( params.objects, ch_phenotyping)
     }
 
     if (params.workflow_name == 'barrier_only') {
 
         if (params.graph_type == 'neighbouRhood') {
-            NEIGHBOURHOOD_WF ( ch_nhood, params.neighbourhood_module_no, params.OBJECTS, params.objects_delimiter)
+            NEIGHBOURHOOD_WF ( ch_nhood, params.neighbourhood_module_no, params.objects, params.objects_delimiter)
         }
         if (params.graph_type == 'nearest_neighbour') {
-            NEAREST_NEIGHBOUR_WF (params.OBJECTS)
+            NEAREST_NEIGHBOUR_WF (params.objects)
         }
     }
 

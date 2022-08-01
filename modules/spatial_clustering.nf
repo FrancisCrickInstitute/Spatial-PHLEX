@@ -13,7 +13,7 @@ process SPATIAL_CLUSTERING {
     module params.md_conda
     conda params.spclust_conda_env
 
-    publishDir "${params.outdir}/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.OVERWRITE
+    publishDir "${params.outdir}/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         val(objects)
@@ -37,8 +37,8 @@ process SPATIAL_CLUSTERING {
             --phenotyping_level !{level} \
             --objects_filepath !{objects} \
             --objects_sep $'!{params.objects_delimiter}' \
-            --metadata_filepath !{params.METADATA} \
-            --metadata_sep $'!{params.METADATA_DELIMITER}' \
+            --metadata_filepath !{params.metadata} \
+            --metadata_sep $'!{params.metadata_delimiter}' \
             --root_outdir .
         '''
 

@@ -53,10 +53,46 @@ workflow CLUSTERED_BARRIER_WF {
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
 
+    
         // Pass epithelial spatial clusters to the barrier module:
         GRAPH_BARRIER(SPATIAL_CLUSTERING.out.ch_target_spclusters)
 
-        
+
+}
+
+workflow CLUSTERED_NEIGHBORHOOD_WF {
+
+    /*
+    * Workflow to perform spatial clustering of cell objects and pass epithelial spatial clusters to the barrier module.
+    */
+    
+
+    take:
+        cell_objects
+        phenotyping_level
+        nhood_file
+        nhood_module_no
+        cell_objects
+        objects_delimiter
+
+    
+    main:
+
+        // Generate imagenames from cell_objects dataframe:
+        GENERATE_IMAGENAMES(cell_objects)
+
+        // convert stdout to a channel of a list of strings
+        imagenames = GENERATE_IMAGENAMES.out.imagenames
+        imagenames = imagenames.splitText().map{x -> x.trim()}
+                                .take( params.dev ? params.number_of_inputs : -1 )
+
+        // Perform spatial clustering:
+        SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
+
+    
+        // Pass epithelial spatial clusters to the barrier module:
+        GRAPH_BARRIER(SPATIAL_CLUSTERING.out.ch_target_spclusters)
+
 
 }
 
