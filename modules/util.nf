@@ -1,8 +1,8 @@
 
-/*
-Generate unique imagenames from the cell objects file. 
-*/
 process GENERATE_IMAGENAMES {
+    /*
+    Generate unique imagenames from the cell objects file. 
+    */
 
     module params.md_conda
     conda params.graph_conda_env
@@ -42,4 +42,13 @@ def print_logo(){
 
 }
 
+def check_params() {
 
+    // if( params.remove('help') ) {
+    //     params.each{ k, v -> println "params.${k.padRight(25)} = ${v}" }
+    //     exit 0
+    // }
+    println "\nExecuting pipeline with the following parameters:"
+    params.each{ k, v -> println "params.${k.padRight(25)} = ${v}" }
+    // additional validation here
+}

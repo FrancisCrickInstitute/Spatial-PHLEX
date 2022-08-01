@@ -29,6 +29,7 @@ process SPATIAL_CLUSTERING {
         path "**/*.tiff" optional true//, emit: ch_alpha_labels
         val "$imagename"//, emit: ch_imagenames_post_spclust
 
+
     shell:
 
     '''

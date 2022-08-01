@@ -29,6 +29,8 @@ process GRAPH_BARRIER {
     /*
     Run graph barrier scoring for all cell types.
     */
+    
+    tag "${imagename}"
 
     executor "slurm"
     time "6h"
@@ -44,22 +46,22 @@ process GRAPH_BARRIER {
         
 
     output:
-        path "${params.graph_type}/*/*/*.csv", emit: ch_barrier_results, optional: true
+        path "**/*barrier_results.csv", emit: ch_barrier_results, optional: true
+
 
     shell:
-
-    '''
-    stromal_barrier.py --graph_type !{params.graph_type} \
-        --imagename !{imagename} \
-        --neighbours 10 \
-        --root_out . \
-        --objects_path !{spclustered_objects} \
-        --objects_sep $'!{params.BARRIER_DELIMITER}' \
-        --panel !{params.PANEL} \
-        --calc_chain True \
-        --barrier_types Myofibroblasts \
-        --phenotyping_level cellType \
-    '''
+        '''
+        stromal_barrier.py --graph_type !{params.graph_type} \
+            --imagename !{imagename} \
+            --neighbours 10 \
+            --root_out . \
+            --objects_path !{spclustered_objects} \
+            --objects_sep $'!{params.BARRIER_DELIMITER}' \
+            --panel !{params.PANEL} \
+            --calc_chain True \
+            --barrier_types Myofibroblasts \
+            --phenotyping_level !{params.barrier_phenotyping_level} \
+        '''
 }
 
 process NEIGHBOURHOOD_BARRIER {
@@ -98,7 +100,7 @@ process NEIGHBOURHOOD_BARRIER {
     --panel !{params.PANEL} \
     --calc_chain True \
     --barrier_types Myofibroblasts \
-    --phenotyping_level cellType \
+    --phenotyping_level !{params.barrier_phenotyping_level} \
     '''
 
 }

@@ -57,6 +57,8 @@ workflow CLUSTERED_BARRIER_WF {
 
         GRAPH_BARRIER(SPATIAL_CLUSTERING.out.ch_epi_spclusters)
 
+        GRAPH_BARRIER.out.ch_barrier_results.view()
+
 }
 
 

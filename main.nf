@@ -7,7 +7,7 @@ nextflow.enable.dsl=2
 
 include {NEIGHBOURHOOD_WF; NEAREST_NEIGHBOUR_WF} from './workflows/barrier.nf'
 include {SPATIAL_CLUSTERING_WF; CLUSTERED_BARRIER_WF } from './workflows/spatial.nf'
-include { print_logo } from './modules/util.nf'
+include { print_logo; check_params } from './modules/util.nf'
 
 project_dir = projectDir
 
@@ -27,10 +27,13 @@ if (params.neighborhood_input) {
    exit 1, "Neighbourhood input file not specified!"
 }
 
-ch_phenotyping = ch_phenotyping.first()
+ch_phenotyping = ch_phenotyping.first() // this will take only the first phenotyping level even if multiple are specified -- > deprecate multiple input?
 
 workflow {
-
+    
+    print_logo()
+    check_params()
+    
     if (params.workflow_name == 'stromal_barrier_only') {
 
         if (params.graph_type == 'neighbouRhood') {
@@ -46,8 +49,6 @@ workflow {
     }
     
     if (params.workflow_name == 'default') {
-
-        print_logo()
         CLUSTERED_BARRIER_WF ( params.OBJECTS, ch_phenotyping)
     }
 

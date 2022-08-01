@@ -54,11 +54,11 @@ def main(args):
 
 
     if GRAPH_TYPE == 'spatial_neighbours':
-        RESULTS_DIR = os.path.join(ROOT_OUT, GRAPH_TYPE, f'radius_{RADIUS}', 'barrier', '_'.join(BARRIER_TYPES))
+        RESULTS_DIR = os.path.join(ROOT_OUT, GRAPH_TYPE, f'radius_{RADIUS}', '_'.join(BARRIER_TYPES))
     elif GRAPH_TYPE == 'nearest_neighbour':
-        RESULTS_DIR = os.path.join(ROOT_OUT, GRAPH_TYPE, f'n_neigh_{NEIGHBOURS}', 'barrier', '_'.join(BARRIER_TYPES))
+        RESULTS_DIR = os.path.join(ROOT_OUT, GRAPH_TYPE, f'n_neigh_{NEIGHBOURS}', '_'.join(BARRIER_TYPES))
     elif GRAPH_TYPE == 'neighbouRhood':
-        RESULTS_DIR = os.path.join(ROOT_OUT, GRAPH_TYPE, f'neighbouRhood_radius_{NEIGHBOURHOOD_RADIUS}', 'barrier', '_'.join(BARRIER_TYPES))
+        RESULTS_DIR = os.path.join(ROOT_OUT, GRAPH_TYPE, f'neighbouRhood_radius_{NEIGHBOURHOOD_RADIUS}', '_'.join(BARRIER_TYPES))
     else:
         raise ValueError("GRAPH_TYPE not recognised.")
 

@@ -22,16 +22,17 @@ nextflow run ./main.nf \
     --OVERWRITE true \
     --PANEL 'p1' \
     --PHENOTYPING_LEVELS 'cellType' \
+    --barrier_phenotyping_level 'cellType' \
     --dev \
     --graph_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-22.02" \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \
     --outdir '../../results' \
     --publish_dir_mode 'copy' \
-    --release '2022-07-29_DSL2_dev_c' \
+    --release '2022-08-30_DSL2_dev' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
-    -resume
+    # -resume
 
 
 
