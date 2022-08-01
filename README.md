@@ -3,7 +3,8 @@ Nextflow pipeline for IMC spatial data methods.
 
 # Usage
 
-```nextflow run ./main.nf \
+```
+nextflow run ./main.nf \
     --BARRIER_DELIMITER ',' \
     --CALCULATE_BARRIER true \
     --METADATA '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
@@ -23,4 +24,5 @@ Nextflow pipeline for IMC spatial data methods.
     --release '2022-08-30_DSL2_dev' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
-    -resume ```
+    -resume 
+```
