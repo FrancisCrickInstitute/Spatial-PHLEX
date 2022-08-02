@@ -1,5 +1,4 @@
 ![TRACERx-PHLEX/Spatial-PHLEX](docs/images/Spatial_PHLEX_logo.png)
-
 # Introduction
 Nextflow pipeline for multiplex imaging spatial data methods.
 
