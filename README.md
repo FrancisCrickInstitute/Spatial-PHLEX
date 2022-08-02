@@ -1,6 +1,6 @@
 ![TRACERx-PHLEX/Spatial-PHLEX](docs/images/Spatial_PHLEX_logo.png)
 
-# Spatial-PHLEX# ![nf-core/imcyto]
+# Introduction
 Nextflow pipeline for multiplex imaging spatial data methods.
 
 # Inputs
