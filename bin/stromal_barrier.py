@@ -230,7 +230,7 @@ def main(args):
                 else:
                     spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
 
-                image_barrier_df.to_csv(spath)
+                image_barrier_df.to_csv(spath, sep=OBJECT_SEP)
 
         else:
             warnings.warn(f"There are no typed objects for {imagename}.")

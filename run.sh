@@ -11,6 +11,16 @@
 ml purge
 ml Nextflow/22.04.0
 
+# ml Singularity/2.6.0-foss-2016b
+
+
+ml Singularity/3.6.4
+
+ml CUDA/11.4.1
+
+export SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/spatial_phlex/test'
+export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/spatial_phlex/test'
+
 
 nextflow run ./main.nf \
     --metadata '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
@@ -24,7 +34,7 @@ nextflow run ./main.nf \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \
     --outdir '../../results' \
-    --release '2022-08-30_DSL2_dev_b' \
+    --release '2022-08-03' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
     --dev \

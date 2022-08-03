@@ -52,10 +52,13 @@ workflow CLUSTERED_BARRIER_WF {
 
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
-
     
         // Pass epithelial spatial clusters to the barrier module:
         GRAPH_BARRIER(SPATIAL_CLUSTERING.out.ch_target_spclusters)
+
+        GRAPH_BARRIER.out.ch_barrier_results.collect().view()
+
+        GRAPH_BARRIER.out.ch_barrier_results.collectFile( name:"${params.outdir}/${params.release}/files.txt", keepHeader: true, skip:1 )
 
 
 }
