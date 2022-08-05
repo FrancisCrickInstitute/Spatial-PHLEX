@@ -148,3 +148,32 @@ process NEIGHBOURHOOD_BARRIER {
         '''
 
 }
+
+process AGGREGATE_SCORES {
+    /*
+    Aggregate the scores from the barrier scoring.
+    */
+        
+    executor "slurm"
+    time "6h"
+    clusterOptions "--part=gpu --gres=gpu:1"
+    
+    module params.md_conda
+    conda params.graph_conda_env
+    
+    publishDir "${params.outdir}/${params.release}/graph/aggregated_barrier_scoring", mode: params.publish_dir_mode, overwrite: params.overwrite
+    
+    input:
+        path scores
+        
+    output:
+        path "*barrier_summary.csv", emit: ch_aggregated_barrier_results, optional: true
+    
+    shell:
+        '''
+        agg_barrier_scores.py --outdir . \
+            --barrier_scores !{scores} \
+            --delimiter $'!{params.objects_delimiter}' 
+        '''
+}
+

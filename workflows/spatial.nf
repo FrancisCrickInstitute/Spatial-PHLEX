@@ -1,6 +1,6 @@
 include { SPATIAL_CLUSTERING } from '../modules/spatial_clustering.nf'
 include { GENERATE_IMAGENAMES } from '../modules/util.nf'
-include { GRAPH_BARRIER } from '../modules/graph_barrier.nf'
+include { GRAPH_BARRIER; AGGREGATE_SCORES } from '../modules/graph_barrier.nf'
 
 workflow SPATIAL_CLUSTERING_WF {
 
@@ -58,7 +58,11 @@ workflow CLUSTERED_BARRIER_WF {
 
         GRAPH_BARRIER.out.ch_barrier_results.collect().view()
 
-        GRAPH_BARRIER.out.ch_barrier_results.collectFile( name:"${params.outdir}/${params.release}/files.txt", keepHeader: true, skip:1 )
+        GRAPH_BARRIER.out.ch_barrier_results.collectFile( name:"$workDir/${params.barrier_source_cell_type}_to_${params.barrier_target_cell_type}_barrier_scores.csv", keepHeader: true, skip:1 ).set {barriers}
+
+        barriers.view()
+
+        AGGREGATE_SCORES(barriers)
 
 
 }

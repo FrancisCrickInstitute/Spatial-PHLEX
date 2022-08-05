@@ -34,11 +34,11 @@ nextflow run ./main.nf \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \
     --outdir '../../results' \
-    --release '2022-08-03' \
+    --release '2022-08-05' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
     --dev \
-    # -resume
+    -resume
 
 
 

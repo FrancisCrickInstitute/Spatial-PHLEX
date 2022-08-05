@@ -11,6 +11,10 @@ include { print_logo; check_params } from './modules/util.nf'
 
 project_dir = projectDir
 
+println projectDir
+println workDir
+println "$workDir/tmp"
+
 // directly create a list channel for phenotyping levels for combinatoric input of phenotype levels and imagenames
 pheno_list = params.phenotyping_level?.tokenize(',')
 ch_phenotyping = Channel.fromList(pheno_list)

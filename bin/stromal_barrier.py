@@ -29,7 +29,7 @@ def main(args):
     PERMUTATION_REGION = args.permutation_region #'all'
     EPI_NO_STROMA = False
     LARGE_CLUSTERS_ONLY = False
-    SIZE_THRESH_NO_UNCLUSTERED = False
+    SIZE_THRESH_NO_UNCLUSTERED = True
     DOMAIN_SIZE_CUTOFF = args.domain_size_cutoff
     target_cell_type = args.target_cell_type
     
@@ -219,16 +219,20 @@ def main(args):
                 print('image_barrier_df', image_barrier_df)
 
                 if PERMUTE_PHENOTYPES == True: 
-                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_permuted.csv')
+                    spath = os.path.join(RESULTS_DIR, 'permuted', f'{imagename}_{cellType}_to_{target_cell_type}_barrier_results.csv'.replace(' ', '_'))
 
                 elif EPI_NO_STROMA:
-                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_no_stroma_epithelial.csv')
+                    spath = os.path.join(RESULTS_DIR, 'no_stroma_epithelial', f'{imagename}_{cellType}_to_{target_cell_type}_barrier_results.csv'.replace(' ', '_'))
                 elif LARGE_CLUSTERS_ONLY:
-                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_large_epi_clusters_only.csv')
+                    spath = os.path.join(RESULTS_DIR, 'large_clusters_only', f'{imagename}_{cellType}_to_{target_cell_type}_barrier_results.csv'.replace(' ', '_'))
                 elif SIZE_THRESH_NO_UNCLUSTERED:
-                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results_size_thresh_no_unclustered.csv')
+                    spath = os.path.join(RESULTS_DIR, 'size_threshold_no_unclustered', f'{imagename}_{cellType}_to_{target_cell_type}_barrier_results.csv'.replace(' ', '_'))
                 else:
-                    spath = os.path.join(RESULTS_DIR, f'{imagename}_barrier_results.csv')
+                    spath = os.path.join(RESULTS_DIR, 'unfiltered', f'{imagename}_{cellType}_to_{target_cell_type}_barrier_results.csv'.replace(' ', '_'))
+
+                dirname = os.path.dirname(spath)
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
 
                 image_barrier_df.to_csv(spath, sep=OBJECT_SEP)
 
