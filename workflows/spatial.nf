@@ -52,6 +52,8 @@ workflow CLUSTERED_BARRIER_WF {
 
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
+
+        SPATIAL_CLUSTERING.out.ch_target_spclusters.view()
     
         // Pass epithelial spatial clusters to the barrier module:
         GRAPH_BARRIER(SPATIAL_CLUSTERING.out.ch_target_spclusters)

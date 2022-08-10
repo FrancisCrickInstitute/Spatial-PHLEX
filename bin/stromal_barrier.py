@@ -32,6 +32,7 @@ def main(args):
     SIZE_THRESH_NO_UNCLUSTERED = True
     DOMAIN_SIZE_CUTOFF = args.domain_size_cutoff
     target_cell_type = args.target_cell_type
+    calculate_positivity = False
     
     if type(args.barrier_types) == list:
         BARRIER_TYPES = args.barrier_types #['Myofibroblasts']
@@ -40,7 +41,7 @@ def main(args):
 
     print(BARRIER_TYPES)
 
-    phenotyping_level = args.phenotyping_level #'cellType' # 'cellType', 'majorType', 'Positive', 'cellClass'
+    phenotyping_level = args.phenotyping_level #phenotyping_level # phenotyping_level, 'majorType', 'Positive', 'cellClass'
     
     # Define immune cell subtypes to measure the 'barrier' for:
     cellTypes = [args.source_cell_type] #['Myofibroblasts'] #['Myofibroblasts', 'Stromal', 'Endothelial']
@@ -70,26 +71,23 @@ def main(args):
     
     if LARGE_CLUSTERS_ONLY:
         # assign distal stroma epithelial cells to unassigned to test
-        objects.loc[(objects['imagename'] == imagename) & (objects[f'{target_cell_type}_cluster_area'] < 2000) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = f'Unclustered {target_cell_type}'
+        objects.loc[(objects['imagename'] == imagename) & (objects[f'{target_cell_type}_cluster_area'] < 2000) & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = f'Unclustered {target_cell_type}'
     if EPI_NO_STROMA:
-        objects.loc[(objects['domain'] == 'Distal Stroma') & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = 'Unassigned'
+        objects.loc[(objects['domain'] == 'Distal Stroma') & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = 'Unassigned'
     
     if SIZE_THRESH_NO_UNCLUSTERED:
         # Alter unclustered
-        objects.loc[(objects[f'{target_cell_type}_spatial_cluster_id'] == -1) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = f'Unclustered {target_cell_type}'
+        objects.loc[(objects[f'{target_cell_type}_spatial_cluster_id'] == -1) & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = f'Unclustered {target_cell_type}'
         # alter those in small clusters:
-        objects.loc[(objects[f'{target_cell_type}_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects['cellType'] == f'{target_cell_type}'), 'cellType'] = f'Unclustered {target_cell_type}'
+        objects.loc[(objects[f'{target_cell_type}_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = f'Unclustered {target_cell_type}'
 
     ## after filtering only proceed if there are epithelial cells that pass the criteria, else raise warning:   
-    if len(objects[objects['cellType'] == f'{target_cell_type}'].index) > 0:
+    if len(objects[objects[phenotyping_level] == f'{target_cell_type}'].index) > 0:
 
         if imagename in objects['imagename'].unique():
 
             if PERMUTE_PHENOTYPES == True:
                 objects = sb.permute_phenotypes(objects, in_place=True, region=PERMUTATION_REGION)
-
-            objects = sb.assign_cell_categories(objects, typing='new')
-            print(objects)
 
             # SPECIFY IMC MARKERS:
             if PANEL == 'p1':
@@ -100,19 +98,19 @@ def main(args):
 
             ## CREATE SPATIAL GRAPH
             if GRAPH_TYPE == 'spatial_neighbours':
-                spg = sb.compute_spatial_graph(objects, imagename, markers, radius=RADIUS)
+                spg = sb.compute_spatial_graph(objects, imagename, markers, phenotyping_level=phenotyping_level, radius=RADIUS)
                 G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
-                node_ids = sb.get_graph_node_ids(spg)
+                node_ids = sb.get_graph_node_ids(spg, phenotyping_level)
                 node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
             elif GRAPH_TYPE == 'nearest_neighbour':
-                spg = sb.compute_nn_graph(objects, imagename, markers, n_neighs=NEIGHBOURS)
+                spg = sb.compute_nn_graph(objects, imagename, markers, n_neighs=NEIGHBOURS, phenotyping_level=phenotyping_level)
                 G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
-                node_ids = sb.get_graph_node_ids(spg)
+                node_ids = sb.get_graph_node_ids(spg, phenotyping_level)
                 node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
             elif GRAPH_TYPE == 'neighbouRhood':
 
                 # specify attributes to attach to nodes:
-                node_attr = ['majorType', 'cellType', 'positive','cellClass']
+                node_attr = [phenotyping_level]
 
                 #read in adjacency data to n graph:
                 primary_nodes = [] 
@@ -144,8 +142,11 @@ def main(args):
                 all_vertex_chains = []
 
                 ## node ids of the target cell type:
-                cellType_node_ids = sb.get_cellType_node_ids(node_ids, 'cellType', cellType)
-                positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
+                cellType_node_ids = sb.get_cellType_node_ids(node_ids, phenotyping_level, cellType)
+                if calculate_positivity:
+                    positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
+
+                print('THIS IS THE CELL TYPE NODE IDS DATAFRAME:')
                 print(cellType_node_ids)
 
                 if len(cellType_node_ids.index) > 0:
@@ -159,18 +160,24 @@ def main(args):
                             ## compute shortest paths of vertex to all other nodes in the graph:
                             shortest_paths = sb.compute_shortest_paths(G, node_ids, source=v)
 
+                            print('THIS IS THE SHORTEST PATHS DATAFRAME:')
+                            print(shortest_paths)
+
                             ## what is the minimum path length to an epithelial cell?
-                            minpath_to_epi = sb.min_path_to_epithelial(shortest_paths)
-                            print("minpath to epi:", minpath_to_epi)
+                            minpath_to_target = sb.min_path_to_cellType(shortest_paths, phenotyping_level, args.target_cell_type)
+                            print("minpath to target:", minpath_to_target)
 
-                            # minpath to epi will be call as 1.6..**308 if not connected (skip these)
-                            if minpath_to_epi < 1000:
+                            # minpath to target will be call as 1.6..**308 if not connected (skip these)
+                            if minpath_to_target < 1000:
 
-                                minimum_paths.append(minpath_to_epi)
+                                minimum_paths.append(minpath_to_target)
 
-                                closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_epi) & (shortest_paths['cellType'] == f'{target_cell_type}')]
-                                degenerate_barrier_fraction = sb.degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
-                                degenerate_adjacent_count = sb.degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, barrier_cells = BARRIER_TYPES)
+                                closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_target) & (shortest_paths[phenotyping_level] == f'{target_cell_type}')]
+                                print('THIS IS THE CLOSEST EPI i.e. target DATAFRAME:')
+                                print(closest_epi)
+                                
+                                degenerate_barrier_fraction = sb.degenerate_path_content(closest_epi, shortest_paths, minpath_to_target, barrier_cells = BARRIER_TYPES, phenotyping_level=phenotyping_level)
+                                degenerate_adjacent_count = sb.degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_target, barrier_cells = BARRIER_TYPES, phenotyping_level=phenotyping_level)
 
                                 all_degenerate_counts.append(degenerate_barrier_fraction)
                                 all_degenerate_adjacent.append(degenerate_adjacent_count)
@@ -178,7 +185,7 @@ def main(args):
                                 if CALC_CHAIN == True:
                                     ## compute the chain of the shortest path to the epithelial cell:
                                     ## calculate the 'cell chain' along this path
-                                    cellchain, vertexes = sb.followchain(shortest_paths, minpath_to_epi, source_cell=cellType, source_vertex=v, phenotype_level=phenotyping_level)
+                                    cellchain, vertexes = sb.followchain(shortest_paths, minpath_to_target, source_cell=cellType, source_vertex=v, target_cell=target_cell_type, phenotyping_level=phenotyping_level)
 
                                     all_cellchains.append(cellchain)
                                     all_vertex_chains.append(vertexes)
@@ -203,7 +210,8 @@ def main(args):
                     barrier_df['object_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, node_label_dict))
 
                     ## add marker positivity information:
-                    barrier_df['positivity_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
+                    if calculate_positivity == True:
+                        barrier_df['positivity_chain'] = barrier_df['vertex_chain'].apply(lambda x: sb.relabel_vertex_chain(x, positive_dict))
 
                     ## apply lambda function to calculate barrier score with specific cell types:
                     print(barrier_df)

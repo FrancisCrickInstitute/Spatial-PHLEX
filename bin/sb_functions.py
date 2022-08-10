@@ -15,46 +15,6 @@ from numpy.random import default_rng
 from squidpy.gr._utils import (_assert_categorical_obs,
                                _assert_non_empty_sequence, _get_valid_values)
 from tqdm import *
-
-
-def assign_cell_categories(df, typing = 'new'):
-    if typing == 'new':
-        ### ASSIGN BROAD CELL CATEGORIES ACCORDING TO CELL CATEGORY DICT:
-        cell_category_dict = dict({'Progenitor':
-        ['CD4 Tcm' 'Naive CD8 T cells', 'Naive CD4 T cells'],
-        'Resident effector':
-        ['CD8 Trm', 'CD57+ CD8 Trm'],
-        'Effector':
-        ['Cytotoxic CD8 T cells', 'Cytotoxic CD4 T cells', 'GZMB+ CD8 T cells', 'GZMB+ CD4 T cells', 'CD57+ CD4 T cells', 'CD57+ CD8 T cells', 'PD1+CD27+ CD8 T cells', 'PD1+CD27+ CD4 T cells', 'CD4 Tem'],
-        'Tregs':['Tregs'],
-        'Dysfunctional':
-        ['CD8 Exhausted TDT', 'CD4 Exhausted TDT'],
-        'Other':
-        ['CD4 (Other)', 'CD8 (Other)']})
-
-        for key, val in cell_category_dict.items():
-            df.loc[df.loc[:, 'cellType'].isin(val), 'cellClass'] = key
-        print(cell_category_dict)
-        return df
-
-    elif typing == 'old':
-    # CELL CATEGORIES [OLD TYPING -- from Katey Enfield]
-        cell_category_dict = dict({
-        'CD8_progenitor': ['CD8 Tcm', 'Naive CD8 T cells', 'PD1+TCF1+ CD8 T cells'],
-        'CD4_progenitor': ['CD4 Tcm', 'PD1+TCF1+ CD4 T cells'],
-        'CD8_resident_effector': ['CD8 Trm', 'PD1+CD27+ CD8 Trm', 'CD39+PD1+ CD8 Trm'],
-        'CD4_resident_effector': ['CD4 Trm'],
-        'CD8_effector': ['Cytotoxic CD8 T cells', 'CD39+CD57+ CD8 T cells'],
-        'CD4_effector': ['Cytotoxic CD4 T cells', 'CD39+CD57+ CD4 T cells'],
-        'Tregs': ['Tregs'],
-        'CD8_dysfunctional': ['CD8 Tdys', 'CD8 Exhausted TDT'],
-        'CD4_dysfunctional': ['CD4 Tdys', 'CD4 Exhausted TDT']})
-        for key, val in cell_category_dict.items():
-            df.loc[df.loc[:, 'cellType'].isin(val), 'cellClass'] = key
-        print(cell_category_dict)
-        return df
-    else:
-        raise ValueError('ValueError: typing not recognised.')
  
 
 def make_legible(string):
@@ -81,14 +41,12 @@ def compute_cohort_centralities(objects, markers, phenotyping_level='cellType', 
         if len(image_cTypes) > 0: # only proceed if there are cells of the specified phenotype level in the image
 
             features = image_objects[markers].values
-            majorTypes = image_objects['majorType'].values
-            cellTypes = image_objects['cellType'].values
-            cellClasses = image_objects['cellClass'].values
-            positivity = image_objects['positive'].values
+
+            cellTypes = image_objects[phenotyping_level].values
             coords = np.asarray(list(zip(image_objects['centerX'].values, image_objects['centerY'].values)))
 
             # create anndata object:
-            adata = AnnData(features, obsm={"spatial": coords}, obs={'majorType':majorTypes, 'cellType':cellTypes, 'positive':positivity, 'cellClass':cellClasses})
+            adata = AnnData(features, obsm={"spatial": coords}, obs={f'{phenotyping_level}':cellTypes})
             print(adata)
             
             ## derive spatial neighbours graph:
@@ -126,14 +84,13 @@ def compute_spatial_graph(objects, imagename, markers, phenotyping_level='cellTy
         else:
             features = image_objects[markers].values
             
-        majorTypes = image_objects['majorType'].values
-        cellTypes = image_objects['cellType'].values
-        cellClasses = image_objects['cellClass'].values
-        positivity = image_objects['positive'].values
+
+        cellTypes = image_objects[phenotyping_level].values
+
         coords = np.asarray(list(zip(image_objects['centerX'].values, image_objects['centerY'].values)))
 
         # create anndata object:
-        adata = AnnData(features, obsm={"spatial": coords}, obs={'majorType':majorTypes, 'cellType':cellTypes, 'positive':positivity, 'cellClass':cellClasses})
+        adata = AnnData(features, obsm={"spatial": coords}, obs={f'{phenotyping_level}':cellTypes})
         print(adata)
         
         ## derive spatial neighbours graph:
@@ -157,14 +114,11 @@ def compute_nn_graph(objects, imagename, markers, phenotyping_level='cellType', 
         else:
             features = image_objects[markers].values
 
-        majorTypes = image_objects['majorType'].values
-        cellTypes = image_objects['cellType'].values
-        cellClasses = image_objects['cellClass'].values
-        positivity = image_objects['positive'].values
+        cellTypes = image_objects[phenotyping_level].values
         coords = np.asarray(list(zip(image_objects['centerX'].values, image_objects['centerY'].values)))
 
         # create anndata object:
-        adata = AnnData(features, obsm={"spatial": coords}, obs={'majorType':majorTypes, 'cellType':cellTypes, 'positive':positivity, 'cellClass':cellClasses})
+        adata = AnnData(features, obsm={"spatial": coords}, obs={f'{phenotyping_level}':cellTypes})
         print(adata)
         
         ## derive spatial neighbours graph:
@@ -186,14 +140,18 @@ def merge_node_ids_to_shortest_paths(shortest_paths, node_ids):
     return shortest
 
 
-def min_path_to_epithelial(shortest_paths):
-    min_path = shortest_paths[shortest_paths['cellType'] == 'Epithelial cells']['distance'].min()
+def min_path_to_epithelial(shortest_paths, phenotyping_level='cellType'):
+    min_path = shortest_paths[shortest_paths[phenotyping_level] == 'Epithelial cells']['distance'].min()
+    return int(min_path)
+
+def min_path_to_cellType(shortest_paths, phenotyping_level, cType):
+    min_path = shortest_paths[shortest_paths[phenotyping_level] == cType]['distance'].min()
     return int(min_path)
 
 
-def get_predecessor(df, minpath_to_target):
+def get_predecessor(df, minpath_to_target, phenotyping_level, target_cellType):
     print(df)
-    predecessor = df[(df['distance'] == minpath_to_target) & (df['cellType'] == 'Epithelial cells')]['predecessor'].values.tolist()
+    predecessor = df[(df['distance'] == minpath_to_target) & (df[phenotyping_level] == target_cellType)]['predecessor'].values.tolist()
     # print('initial_predecessor: ', predecessor)
     return predecessor
 
@@ -203,14 +161,15 @@ def get_chain_predecessor(df, predecessor):
     return chain_predecessor
 
 
-def followchain(shortest_paths, minpath_to_target, source_cell, source_vertex, target_cell = 'Epithelial cells', phenotype_level='cellType'):
+def followchain(shortest_paths, minpath_to_target, source_cell, source_vertex, target_cell = 'Epithelial cells', phenotyping_level='cellType'):
     '''
     The min_path_to_target is e.g. 3 jumps from the source to the target cell; 
     there may be more than one path of the same length.
     
     Todo: return vertex ids for subsequent referencing of e.g. positive marker expression'''
+    print('SHORTEST PATHS: \n', shortest_paths)
     sorted_shortest_paths = shortest_paths.sort_values(by='distance')
-    sorted_shortest_paths = sorted_shortest_paths[(sorted_shortest_paths['distance'] == minpath_to_target) & (sorted_shortest_paths['cellType'] == 'Epithelial cells')]
+    sorted_shortest_paths = sorted_shortest_paths[(sorted_shortest_paths['distance'] == minpath_to_target) & (sorted_shortest_paths[phenotyping_level] == target_cell)]
     print('SORTED SHORTEST PATHS\n', sorted_shortest_paths)
     target_vertex = sorted_shortest_paths['vertex'].iloc[0]
         
@@ -228,14 +187,14 @@ def followchain(shortest_paths, minpath_to_target, source_cell, source_vertex, t
             chaincells = [target_cell] # store cells in chain between starting cell and destination 
             vertexes = [target_vertex]
 
-            predecessors = get_predecessor(sorted_shortest_paths, minpath_to_target) # get list of initial predecessor cells            
+            predecessors = get_predecessor(sorted_shortest_paths, minpath_to_target, phenotyping_level, target_cellType = target_cell) # get list of initial predecessor cells            
             p = predecessors[0]
 
             for j in range(minpath_to_target-1):
             # take first predecessor if more than one:
             
                 if p != -1: ## proceed only if the predecessor is not the source cell
-                    predecessor_nodeType = get_predecessor_nodeType(shortest_paths, p, phenotype_level=phenotype_level)
+                    predecessor_nodeType = get_predecessor_nodeType(shortest_paths, p, phenotyping_level=phenotyping_level)
                     chaincells.append(predecessor_nodeType)
                     vertexes.append(p)
                     p = get_chain_predecessor(shortest_paths, p)
@@ -261,17 +220,20 @@ def recursive_predecessor(df, predecessor):
         return recursive_predecessor(df, df[df['predecessor'] == predecessor])
 
 
-def get_predecessor_nodeType(df, predecessor, phenotype_level='cellType'):
-    nodetype = df[df['vertex'] == predecessor].iloc[0][phenotype_level]
+def get_predecessor_nodeType(df, predecessor, phenotyping_level='cellType'):
+    nodetype = df[df['vertex'] == predecessor].iloc[0][phenotyping_level]
     return nodetype
 
 
-def get_graph_node_ids(spg):
+def get_graph_node_ids(spg, phenotyping_level):
     """
     Produce dataframe of graph node ids from squidpy spatial graph.
     """
-    node_ids = pd.DataFrame(spg.obs[['majorType', 'cellType', 'positive', 'cellClass']])
+    
+    node_ids = pd.DataFrame(spg.obs[[phenotyping_level]])
     node_ids['vertex'] = np.arange(0,len(node_ids.index))
+    print('THIS IS THE NODE IDS DATAFRAME:')
+    print(node_ids)
     return node_ids
 
 
@@ -350,7 +312,7 @@ def adjacent_barrier_call(chain, BARRIER_TYPES):
     return barrier
 
 
-def degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier_cells=['Myofibroblasts']):
+def degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier_cells=['Myofibroblasts'], phenotyping_level='cellType'):
     
     """
     closest epi = shortest path dataframe with each row an entry corresponding to an epithelial cell at minpath_to_epi
@@ -385,8 +347,8 @@ def degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier
 
             degenerate_path_content = pd.concat(path_cells)
 
-            if set(barrier_cells).intersection(set(degenerate_path_content['cellType'])) != set():
-                myofibroblast_fraction_degen = degenerate_path_content['cellType'].value_counts(normalize=True)[barrier_cells].sum()
+            if set(barrier_cells).intersection(set(degenerate_path_content[phenotyping_level])) != set():
+                myofibroblast_fraction_degen = degenerate_path_content[phenotyping_level].value_counts(normalize=True)[barrier_cells].sum()
             else:
                 myofibroblast_fraction_degen = 0
     else:
@@ -394,7 +356,7 @@ def degenerate_path_content(closest_epi, shortest_paths, minpath_to_epi, barrier
     return myofibroblast_fraction_degen
 
 
-def degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, barrier_cells=['Myofibroblasts']):
+def degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, barrier_cells=['Myofibroblasts'], phenotyping_level='cellType'):
     
     """
     closest epi = shortest path dataframe with each row an entry corresponding to an epithelial cell at minpath_to_epi
@@ -430,8 +392,8 @@ def degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, bar
             degenerate_path_content = pd.concat(path_cells)
             adjacent_cells_df = degenerate_path_content[degenerate_path_content['distance'] == (minpath_to_epi-1)]
 
-            if set(barrier_cells).intersection(set(adjacent_cells_df['cellType'])) != set():                
-                mean_adjacent_barrier = adjacent_cells_df['cellType'].value_counts(normalize=True)[barrier_cells].sum() #/ len(adjacent_cells_df)
+            if set(barrier_cells).intersection(set(adjacent_cells_df[phenotyping_level])) != set():                
+                mean_adjacent_barrier = adjacent_cells_df[phenotyping_level].value_counts(normalize=True)[barrier_cells].sum() #/ len(adjacent_cells_df)
             else:
                 mean_adjacent_barrier = 0
 
@@ -439,7 +401,7 @@ def degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_epi, bar
         mean_adjacent_barrier = 0
     return mean_adjacent_barrier
 
-def permute_phenotypes(objects, in_place=True, region = 'all'):
+def permute_phenotypes(objects, in_place=True, region = 'all', phenotyping_level = 'cellType'):
     '''
     Randomly permute phenotype and positivity information for all images in the objects table.
     
@@ -456,25 +418,25 @@ def permute_phenotypes(objects, in_place=True, region = 'all'):
             rng = np.random.default_rng(seed=123)
             if in_place:
                 objects.loc[objects['imagename'] == imagename, 
-                            ('cellType', 'majorType', 'positive')] = rng.permutation(objects.loc[objects['imagename'] == imagename,
-                                                                                                 ('cellType', 'majorType', 'positive')].values)
+                            (phenotyping_level, 'majorType', 'positive')] = rng.permutation(objects.loc[objects['imagename'] == imagename,
+                                                                                                 (phenotyping_level, 'majorType', 'positive')].values)
             else:
                 objects.loc[objects['imagename'] == imagename, 
                             ('cellType_permuted', 'majorType_permuted', 'positive_permuted')] = rng.permutation(objects.loc[objects['imagename'] == imagename,
-                                                                                                 ('cellType', 'majorType', 'positive')].values)
+                                                                                                 (phenotyping_level, 'majorType', 'positive')].values)
     else:
         for imagename in objects['imagename'].unique():
             rng = np.random.default_rng(seed=123)
             if in_place:
                 objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region), 
-                            ('cellType', 'majorType', 'positive')] = rng.permutation(objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region),
-                                                                                                 ('cellType', 'majorType', 'positive')].values)
+                            (phenotyping_level, 'majorType', 'positive')] = rng.permutation(objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region),
+                                                                                                 (phenotyping_level, 'majorType', 'positive')].values)
             else:
                 objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region), 
                             (f'cellType_{region}_permuted', f'majorType_{region}_permuted', f'positive_{region}_permuted')] = rng.permutation(objects.loc[(objects['imagename'] == imagename) & (objects['region'] == region),
-                                                                                                 ('cellType', 'majorType', 'positive')].values)
+                                                                                                 (phenotyping_level, 'majorType', 'positive')].values)
                 objects.loc[(objects['imagename'] == imagename) & ~(objects['region'] == region), 
                             (f'cellType_{region}_permuted', f'majorType_{region}_permuted', f'positive_{region}_permuted')] = objects.loc[(objects['imagename'] == imagename) & ~(objects['region'] == region),
-                                                                                                 ('cellType', 'majorType', 'positive')].values
+                                                                                                 (phenotyping_level, 'majorType', 'positive')].values
 
     return objects

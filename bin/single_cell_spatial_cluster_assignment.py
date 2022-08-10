@@ -159,7 +159,7 @@ def main(CONFIG):
         else:
             # if no epithelial cells present, isntantiate empty dbscan cluster column and assign appropriate values to other cell types:
             clustering_cells_df['dbscan_cluster'] = []
-            image_df['{}_spatial_cluster'.format(cType)] = -1
+            image_df['{}_spatial_cluster_id'.format(cType)] = -1
             image_df['{}_cluster_area'.format(cType)] = np.nan
             image_df['nearest {}_cluster_id'.format(cType)] = -1
             image_df['distance to nearest {}_cluster_boundary'.format(cType)] = np.nan

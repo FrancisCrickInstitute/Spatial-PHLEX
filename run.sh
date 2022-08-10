@@ -2,7 +2,7 @@
 #SBATCH --partition=cpu
 #SBATCH --ntasks 1
 #SBATCH --mem 8GB
-#SBATCH --time 3:00:0
+#SBATCH --time 4:00:0
 #SBATCH --job-name pipe
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
@@ -25,7 +25,7 @@ export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rub
 nextflow run ./main.nf \
     --metadata '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/metadata.tracerx.txt'\
     --metadata_delimiter '\t'\
-    --objects "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/cell_typing/tx100_cell_objects_tx100_publication_p1.txt" \
+    --objects "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/src/scripts/tx100_cell_objects_tx100_publication_p1_reassigned_cellTypes_for_barrier.csv" \
     --objects_delimiter '\t'\
     --PANEL 'p1' \
     --phenotyping_level 'cellType' \
@@ -34,11 +34,15 @@ nextflow run ./main.nf \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \
     --outdir '../../results' \
-    --release '2022-08-05' \
+    --release '2022-08-08_EC_test_release' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
+    --barrier_source_cell_type 'CD8 T cells'\
+    --barrier_target_cell_type 'Epithelial cells_tumour'\
+    --barrier_cell_type 'Myofibroblasts'\
     --dev \
     -resume
+    # --dev
 
 
 
