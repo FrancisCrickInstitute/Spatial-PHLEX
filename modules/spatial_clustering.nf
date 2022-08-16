@@ -10,8 +10,8 @@ process SPATIAL_CLUSTERING {
     clusterOptions "--part=gpu --gres=gpu:1"
 
 
-    module params.md_conda
-    conda params.spclust_conda_env
+    // module params.md_conda
+    // conda params.spclust_conda_env
 
     publishDir "${params.outdir}/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.overwrite
 

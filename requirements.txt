@@ -1,3 +1,7 @@
-squidpy=1.1.2
+squidpy==1.1.2
 descartes
 shapely
+scikit-learn
+scikit-image
+alphashape
+scanpy

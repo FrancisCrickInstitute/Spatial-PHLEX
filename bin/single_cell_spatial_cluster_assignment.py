@@ -80,7 +80,7 @@ def main(CONFIG):
     CONFIG.display()
 
     # read metadata
-    metadata = pd.read_csv(CONFIG.metadata, sep = CONFIG.MSEP)
+    metadata = pd.read_csv(CONFIG.metadata, sep = CONFIG.MSEP, encoding='latin1')
     
     # define imagename to be processed:
     imagename = CONFIG.IMAGENAME
@@ -88,7 +88,7 @@ def main(CONFIG):
     imshape = get_image_shape_from_metadata(metadata, imagename) # (1747,1756) #
 
     # read df:
-    phenotype_df = pd.read_csv(CONFIG.OBJECTS_FILEPATH, sep=CONFIG.OBJECT_SEP)
+    phenotype_df = pd.read_csv(CONFIG.OBJECTS_FILEPATH, sep=CONFIG.OBJECT_SEP, encoding='latin1')
 
     print(phenotype_df)
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     parser.add_argument('--metadata_sep', type=str, default='\t', help='separator in metadata file')
     parser.add_argument('--root_outdir', type=str, default='.', help='path to output directory')
     parser.add_argument('--eps', type=float, default=25, help='eps parameter for dbscan')
-    parser.add_argument('--min_s', type=int, default=0, help='min number of cells in a cluster')
+    parser.add_argument('--min_s', type=int, default=1, help='min number of cells in a cluster')
     parser.add_argument('--alpha', type=float, default=0.05, help='alpha parameter for alphashape')
     parser.add_argument('--phenotyping_level', type=str, default='cellType', help='what level of phenotyping, majorType or cellType')
     args = parser.parse_args()

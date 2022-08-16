@@ -37,8 +37,9 @@ process GRAPH_BARRIER {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    module params.md_conda
-    conda params.graph_conda_env
+    // module params.md_conda
+    // conda params.graph_conda_env
+    module params.md_cuda
 
     publishDir "${params.outdir}/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
