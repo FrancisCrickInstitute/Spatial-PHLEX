@@ -7,9 +7,6 @@ process NEIGHBOURHOOD_GRAPH {
 	// time "0.25h"
 	// clusterOptions "--part=cpu --mem=2GB"
 
-    module params.md_conda
-    conda params.graph_conda_env
-
     publishDir "${params.outdir}/${params.release}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
@@ -36,10 +33,6 @@ process GRAPH_BARRIER {
     executor "slurm"
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
-
-    // module params.md_conda
-    // conda params.graph_conda_env
-    module params.md_cuda
 
     publishDir "${params.outdir}/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
@@ -79,9 +72,6 @@ process NN_BARRIER {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    module params.md_conda
-    conda params.graph_conda_env
-
     publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
@@ -120,9 +110,6 @@ process NEIGHBOURHOOD_BARRIER {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    module params.md_conda
-    conda params.graph_conda_env
-
     publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
@@ -158,10 +145,7 @@ process AGGREGATE_SCORES {
     executor "slurm"
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
-    
-    module params.md_conda
-    conda params.graph_conda_env
-    
+
     publishDir "${params.outdir}/${params.release}/graph/aggregated_barrier_scoring", mode: params.publish_dir_mode, overwrite: params.overwrite
     
     input:
