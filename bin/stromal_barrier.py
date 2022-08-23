@@ -21,7 +21,6 @@ def main(args):
     ROOT_OUT = args.root_out
     OBJECTS_PATH = args.objects_path
     OBJECT_SEP = args.objects_sep #','
-    PANEL = args.panel # args[3] #'p2'
     imagename = args.imagename
 
     CALC_CHAIN = args.calc_chain # True
@@ -45,12 +44,6 @@ def main(args):
     
     # Define immune cell subtypes to measure the 'barrier' for:
     cellTypes = [args.source_cell_type] #['Myofibroblasts'] #['Myofibroblasts', 'Stromal', 'Endothelial']
-    '''['CD4 T cells', 'CD4 T cells', 'CD57+ CD4 T cells', 'Naive CD4 T cells',
-       'Leukocytes - Other', 'CD4+ Myeloid cells', 'Cytotoxic CD8 T cells',
-       'CD4 Tcm', 'Tregs', 'CD8 Trm', 'CD8 T cells', 'CD57+ CD8 Trm',
-       'CD8 Exhausted TDT', 'Naive CD8 T cells', 'T cells DP',
-       'Cytotoxic CD4 T cells', 'T cells - Other']'''
-
 
     if GRAPH_TYPE == 'spatial_neighbours':
         RESULTS_DIR = os.path.join(ROOT_OUT, GRAPH_TYPE, f'radius_{RADIUS}', '_'.join(BARRIER_TYPES))
@@ -89,12 +82,7 @@ def main(args):
             if PERMUTE_PHENOTYPES == True:
                 objects = sb.permute_phenotypes(objects, in_place=True, region=PERMUTATION_REGION)
 
-            # SPECIFY IMC MARKERS:
-            if PANEL == 'p1':
-                markers = ['CD39', 'CD4', 'LAG3', 'casp3', 'CD31', 'CD27', 'CXCR6', 'PDL1', 'CXCR4', 'TCF1', 'CD103', 'GATA3', 'FAP1', 'ICOS', 'Vimentin', 'CD25', 'PD1', 'CD3', 'GITR', 'alphaSMA', 'CD8a', 'CTLA4', 'B2M', 'TIM3', 'Ki67', 'CD57', 'CD45RA', 'CXCL12', 'panCK', 'CCR7', 'Collagen', 'pSTAT1', 'GZMB', 'CD45', 'FOXP3']
-            if PANEL == 'p2':
-                markers = ['CD163', 'CLEC9a', 'KIR2DL3', 'VISTA', 'CD56', 'TIM3', 'CD45', 'CD16', 'MHCII', 'panactin', 'TCRd', 'PD1', 'CD79a', 'CD66b', 'CD14', 'MPO', 'CAIX', 'CD38', 'MCT4', 'CD206', 'IDO', 'CD68', 'PDL1', 'CD20', 'CD11c', 'CD4', 'CD8a', 'CD31', 'LAG3', 'CD103', 'CD11b', 'CD3', 'GZMB', 'panCK', 'CD73']
-
+            markers = [f'm_{i}' for i in range(10)] # these are dummy markers for the sake of graph construction with squidpy; they are not needed for barrier scoring based on the phenotyping level
 
             ## CREATE SPATIAL GRAPH
             if GRAPH_TYPE == 'spatial_neighbours':

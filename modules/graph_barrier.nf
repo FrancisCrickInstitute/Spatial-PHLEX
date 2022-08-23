@@ -54,7 +54,6 @@ process GRAPH_BARRIER {
             --root_out . \
             --objects_path !{spclustered_objects} \
             --objects_sep $'!{params.objects_delimiter}' \
-            --panel !{params.PANEL} \
             --barrier_types '!{params.barrier_cell_type}' \
             --phenotyping_level !{params.barrier_phenotyping_level} \
         '''
@@ -93,7 +92,6 @@ process NN_BARRIER {
             --root_out . \
             --objects_path !{objects} \
             --objects_sep $'!{params.objects_delimiter}' \
-            --panel !{params.PANEL} \
             --barrier_types '!{params.barrier_cell_type}' \
             --phenotyping_level !{params.barrier_phenotyping_level} \
         '''
@@ -129,7 +127,6 @@ process NEIGHBOURHOOD_BARRIER {
         --root_out . \
         --objects_path !{objects} \
         --objects_sep $'!{params.objects_delimiter}' \
-        --panel !{params.PANEL} \
         --calc_chain True \
         --barrier_types Myofibroblasts \
         --phenotyping_level !{params.barrier_phenotyping_level} \

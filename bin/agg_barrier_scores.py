@@ -8,14 +8,14 @@ import os
 def main(args):
 
     # read sbarrier scores:
-    scores = pd.read_csv(args.barrier_scores, sep=args.delimiter)
+    scores = pd.read_csv(args.barrier_scores, sep=args.delimiter, encoding='utf-8')
 
     #define metrics for aggregation:
     metrics = ['weighted_barrier_content','binary_barrier','adjacent_barrier','barrier_content','barrier_fraction','degenerate_barrier_fraction', 'degenerate_adjacent_fraction']
 
     # group dataframe by image and source cell used in barrier calculation:
     grouped = scores.groupby(['imagename', 'source_cell'])
-
+    
     # define aggregation functions for summary table:
     agg_funcs = [np.mean, np.median, np.std]
     summary_data = grouped[metrics].agg(agg_funcs)
