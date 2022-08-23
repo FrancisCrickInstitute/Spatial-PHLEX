@@ -18,9 +18,10 @@ ml Singularity/3.6.4
 
 ml CUDA/11.4.1
 
-export SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/spatial_phlex/test'
-export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/spatial_phlex/test'
-
+# export SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/spatial_phlex/test'
+# export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/spatial_phlex/test'
+export SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/deep-imcyto'
+export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/deep-imcyto'
 
 nextflow run ./main.nf \
     --metadata '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/archive/metadata.tracerx.220815.txt'\
@@ -34,7 +35,7 @@ nextflow run ./main.nf \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \
     --outdir '../../results' \
-    --release '2022-08-15_container_testing' \
+    --release '2022-08-23_container_testing_deepimcyto' \
     --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
     --workflow_name 'default' \
     --barrier_source_cell_type 'CD8 T cells'\
