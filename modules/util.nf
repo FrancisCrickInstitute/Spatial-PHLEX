@@ -4,9 +4,6 @@ process GENERATE_IMAGENAMES {
     Generate unique imagenames from the cell objects file. 
     */
 
-    module params.md_conda
-    conda params.graph_conda_env
-
     input:
         path objects
 
@@ -49,3 +46,48 @@ def check_params() {
     println("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 
 }
+
+
+def get_cellType_tuple(ArrayList channel) {
+    //gets [sample_id,cellType,path_to_file] for clustering data
+    def sample = channel[0]
+    def file_list = channel[1]
+
+    if (file_list.getClass() == java.util.ArrayList) {
+
+        def new_array = []
+        for (int i=0; i<file_list.size(); i++) {
+            def item = []
+            item.add(sample)
+            item.add(file_list[i].getParent().getParent().getName())
+            item.add(file_list[i])
+            new_array.add(item)
+        }
+
+        return new_array
+    }
+    else {
+        def new_array = []
+        new_array.add(sample)
+        new_array.add(file_list.getParent().getParent().getName())
+        new_array.add(file_list)
+        return new_array
+    }
+    
+}
+
+def group_channel(x){
+    grouped = x.map { get_cellType_tuple(it) }
+                .flatten()
+                .collate(3)
+    return grouped
+}
+
+// def group_channel(x){
+//     grouped = x.map { get_cellType_tuple(it) }
+//                 .flatten()
+//                 .collate(3)
+//                 .groupTuple(by: [0,1])
+//                 .map { it -> [ it[0], it[1], it[2].sort() ] }
+//     return grouped
+// }

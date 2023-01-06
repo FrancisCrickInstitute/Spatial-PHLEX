@@ -79,13 +79,16 @@ def main(CONFIG):
     # display configuration:
     CONFIG.display()
 
-    # read metadata
-    metadata = pd.read_csv(CONFIG.metadata, sep = CONFIG.MSEP, encoding='latin1')
-    
     # define imagename to be processed:
     imagename = CONFIG.IMAGENAME
 
-    imshape = get_image_shape_from_metadata(metadata, imagename) # (1747,1756) #
+    # read metadata
+    if CONFIG.metadata is not None:
+        metadata = pd.read_csv(CONFIG.metadata, sep = CONFIG.MSEP, encoding='latin1')
+        imshape = get_image_shape_from_metadata(metadata, imagename) 
+    else:
+        imshape = (1000,1000)
+    
 
     # read df:
     phenotype_df = pd.read_csv(CONFIG.OBJECTS_FILEPATH, sep=CONFIG.OBJECT_SEP, encoding='latin1')
@@ -109,7 +112,7 @@ def main(CONFIG):
         # PROCESS IMAGE #
                
         # create out directory:
-        out_dir = os.path.join(CONFIG.ROOT_OUTDIR, '{}_clustering/{}'.format(cType, imagename))
+        out_dir = os.path.join(CONFIG.ROOT_OUTDIR, '{}/{}'.format(cType, imagename))
         if os.path.exists(out_dir) != True:
             os.makedirs(out_dir)
         
@@ -188,7 +191,7 @@ if __name__ == "__main__":
     parser.add_argument('--imagename', type=str, default='test_image', help='name of image to be processed')
     parser.add_argument('--objects_filepath', type=str, default='test_objects.csv', help='path to objects file')
     parser.add_argument('--objects_sep', type=str, default=';', help='separator in objects file')
-    parser.add_argument('--metadata_filepath', type=str, default='metadata.txt', help='path to metadata file')
+    parser.add_argument('--metadata_filepath', type=str, default=None, help='path to metadata file')
     parser.add_argument('--metadata_sep', type=str, default='\t', help='separator in metadata file')
     parser.add_argument('--root_outdir', type=str, default='.', help='path to output directory')
     parser.add_argument('--eps', type=float, default=25, help='eps parameter for dbscan')

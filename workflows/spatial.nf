@@ -1,5 +1,5 @@
-include { SPATIAL_CLUSTERING } from '../modules/spatial_clustering.nf'
-include { GENERATE_IMAGENAMES } from '../modules/util.nf'
+include { SPATIAL_CLUSTERING; INTRACLUSTER_DENSITY } from '../modules/spatial_clustering.nf'
+include { GENERATE_IMAGENAMES; group_channel } from '../modules/util.nf'
 include { GRAPH_BARRIER; AGGREGATE_SCORES } from '../modules/graph_barrier.nf'
 
 workflow SPATIAL_CLUSTERING_WF {
@@ -25,6 +25,8 @@ workflow SPATIAL_CLUSTERING_WF {
 
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
+        all_spclusters = group_channel(SPATIAL_CLUSTERING.out.ch_all_spclusters)
+        INTRACLUSTER_DENSITY(all_spclusters)
 
 }
 
@@ -52,19 +54,20 @@ workflow CLUSTERED_BARRIER_WF {
 
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
-
+        
         SPATIAL_CLUSTERING.out.ch_target_spclusters.view()
     
         // Pass epithelial spatial clusters to the barrier module:
         GRAPH_BARRIER(SPATIAL_CLUSTERING.out.ch_target_spclusters)
-
-        GRAPH_BARRIER.out.ch_barrier_results.collect().view()
 
         GRAPH_BARRIER.out.ch_barrier_results.collectFile( name:"$workDir/${params.barrier_source_cell_type}_to_${params.barrier_target_cell_type}_barrier_scores.csv", keepHeader: true, skip:1 ).set {barriers}
 
         barriers.view()
 
         AGGREGATE_SCORES(barriers)
+
+        all_spclusters = group_channel(SPATIAL_CLUSTERING.out.ch_all_spclusters)
+        // INTRACLUSTER_DENSITY(all_spclusters)
 
 
 }
@@ -97,6 +100,8 @@ workflow CLUSTERED_NEIGHBORHOOD_WF {
 
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
+        all_spclusters = group_channel(SPATIAL_CLUSTERING.out.ch_all_spclusters)
+        INTRACLUSTER_DENSITY(all_spclusters)
 
     
         // Pass epithelial spatial clusters to the barrier module:

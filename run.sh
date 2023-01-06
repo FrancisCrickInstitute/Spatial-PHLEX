@@ -26,20 +26,19 @@ export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rub
 nextflow run ./main.nf \
     --metadata '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/archive/metadata.tracerx.220815.txt'\
     --metadata_delimiter '\t'\
-    --objects "/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/src/scripts/tx100_cell_objects_tx100_publication_p1_reassigned_majorType_for_barrier.csv" \
+    --objects '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/modified_objects_tables/2022-09-09_tx100_cell_objects_tx100_publication_p2_reassigned_majorType_for_spclustering.csv'\
     --objects_delimiter '\t'\
-    --PANEL 'p1' \
     --phenotyping_level 'majorType' \
     --barrier_phenotyping_level 'majorType' \
     --graph_type 'nearest_neighbour' \
     --outdir '../../results' \
-    --release '2022-08-23_container_testing_deepimcyto' \
-    --workflow_name 'default' \
+    --release '2022-09-21_combined_tumour_assignments' \
+    --workflow_name 'spatial_clustering' \
     --barrier_source_cell_type 'CD8 T cells'\
     --barrier_target_cell_type 'Epithelial cells_tumour'\
     --barrier_cell_type 'Myofibroblasts'\
-    --dev true \
-    # -resume
+    --dev false \
+    -resume
     # --dev
 
 

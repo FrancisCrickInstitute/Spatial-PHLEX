@@ -38,7 +38,7 @@ workflow {
     print_logo()
     check_params()
     
-    if (params.workflow_name == 'default') {
+    if (params.workflow_name == 'default') || (params.workflow_name == 'clustered_barrier') {
         CLUSTERED_BARRIER_WF ( params.objects, ch_phenotyping)
     }
 
