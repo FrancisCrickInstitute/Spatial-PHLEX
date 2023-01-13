@@ -25,8 +25,8 @@ nextflow run ./main.nf \
     --metadata_delimiter '\t'\
     --objects "/path/to/cell_objects.csv" \
     --objects_delimiter '\t'\
-    --phenotyping_level 'cellType' \
-    --barrier_phenotyping_level 'cellType' \
+    --phenotyping_column 'cellType' \
+    --barrier_phenotyping_column 'cellType' \
     --graph_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-22.02" \
     --graph_type 'nearest_neighbour' \
     --md_conda 'Anaconda3' \

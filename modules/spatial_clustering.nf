@@ -31,7 +31,7 @@ process SPATIAL_CLUSTERING {
         if (params.metadata)
             '''
             single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
-                --phenotyping_level !{level} \
+                --phenotyping_column !{level} \
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
                 --metadata_filepath !{params.metadata} \
@@ -41,7 +41,7 @@ process SPATIAL_CLUSTERING {
         else 
             '''
             single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
-                --phenotyping_level !{level} \
+                --phenotyping_column !{level} \
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
                 --root_outdir .
@@ -59,7 +59,7 @@ process INTRACLUSTER_DENSITY {
     time "1h"
     clusterOptions "--part=cpu --mem=4GB"
 
-    publishDir "${params.outdir}/${params.release}/spatial_clustering/intracluster_density/${params.phenotyping_level}/${imagename}/${cellType}", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/${params.release}/spatial_clustering/intracluster_density/${params.phenotyping_column}/${imagename}/${cellType}", mode: params.publish_dir_mode, overwrite: params.overwrite
     
     input:
         tuple val(imagename), val(cellType), path(data)
@@ -72,7 +72,7 @@ process INTRACLUSTER_DENSITY {
         '''
         spcluster_properties.py --outdir . \
             --clustered_data !{data} \
-            --phenotyping_level !{params.phenotyping_level} \
+            --phenotyping_column !{params.phenotyping_column} \
             --delimiter $'!{params.objects_delimiter}' \
             --imagename !{imagename}
         '''

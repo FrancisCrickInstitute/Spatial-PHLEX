@@ -21,12 +21,12 @@ export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rub
 nextflow run ./main.nf \
     --metadata '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/metadata/archive/metadata.tracerx.220815.txt'\
     --metadata_delimiter '\t'\
-    --objects '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/modified_objects_tables/20221205_release/tx100_cell_objects_tx100_publication_p2_reassigned.csv'\
+    --objects '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/modified_objects_tables/20230112_release/tx100_cell_objects_tx100_publication_p2_reassigned.csv'\
     --objects_delimiter '\t'\
-    --phenotyping_level 'majorType' \
+    --phenotyping_column 'majorType' \
     --graph_type 'nearest_neighbour' \
     --outdir '../../results' \
-    --release '2022-12-05_combined_tumour/p2' \
+    --release '2023-01-12_intracluster_density_test/p2' \
     --workflow_name 'spatial_clustering' \
-    --dev false \
+    --dev true \
     # -resume

@@ -10,7 +10,7 @@ workflow SPATIAL_CLUSTERING_WF {
 
     take:
         cell_objects
-        phenotyping_level
+        phenotyping_column
 
     
     main:
@@ -24,9 +24,14 @@ workflow SPATIAL_CLUSTERING_WF {
                                 .take( params.dev ? params.number_of_inputs : -1 )
 
         // Perform spatial clustering:
-        SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
+        SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_column)
         all_spclusters = group_channel(SPATIAL_CLUSTERING.out.ch_all_spclusters)
-        INTRACLUSTER_DENSITY(all_spclusters)
+        all_spclusters.view()
+
+        all_spclusters.collectFile( name:"$workDir/collected_spclusters.csv", keepHeader: true, skip:1 ).set {all_spclusts}
+        all_spclusts.view()
+
+        // INTRACLUSTER_DENSITY(all_spclusters)
 
 }
 
@@ -39,7 +44,7 @@ workflow CLUSTERED_BARRIER_WF {
 
     take:
         cell_objects
-        phenotyping_level
+        phenotyping_column
 
     
     main:
@@ -53,7 +58,7 @@ workflow CLUSTERED_BARRIER_WF {
                                 .take( params.dev ? params.number_of_inputs : -1 )
 
         // Perform spatial clustering:
-        SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
+        SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_column)
         
         SPATIAL_CLUSTERING.out.ch_target_spclusters.view()
     
@@ -81,7 +86,7 @@ workflow CLUSTERED_NEIGHBORHOOD_WF {
 
     take:
         cell_objects
-        phenotyping_level
+        phenotyping_column
         nhood_file
         nhood_module_no
         cell_objects
@@ -99,7 +104,7 @@ workflow CLUSTERED_NEIGHBORHOOD_WF {
                                 .take( params.dev ? params.number_of_inputs : -1 )
 
         // Perform spatial clustering:
-        SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_level)
+        SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_column)
         all_spclusters = group_channel(SPATIAL_CLUSTERING.out.ch_all_spclusters)
         INTRACLUSTER_DENSITY(all_spclusters)
 

@@ -16,7 +16,7 @@ println workDir
 println "$workDir/tmp"
 
 // directly create a list channel for phenotyping levels for combinatoric input of phenotype levels and imagenames
-pheno_list = params.phenotyping_level?.tokenize(',')
+pheno_list = params.phenotyping_column?.tokenize(',')
 ch_phenotyping = Channel.fromList(pheno_list)
 
 // channel for neighbourhood input csv files
@@ -38,7 +38,7 @@ workflow {
     print_logo()
     check_params()
     
-    if (params.workflow_name == 'default') || (params.workflow_name == 'clustered_barrier') {
+    if ((params.workflow_name == 'default') || (params.workflow_name == 'clustered_barrier')) {
         CLUSTERED_BARRIER_WF ( params.objects, ch_phenotyping)
     }
 
@@ -55,7 +55,5 @@ workflow {
             NEAREST_NEIGHBOUR_WF (params.objects)
         }
     }
-
-    
 
 }

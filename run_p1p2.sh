@@ -22,8 +22,8 @@ nextflow run ./main.nf \
     --metadata_delimiter '\t'\
     --objects '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/modified_objects_tables/20221011_release_KE/tx100_cell_objects_tx100_publication_p1_reassigned_majorType_KE.csv'\
     --objects_delimiter '\t'\
-    --phenotyping_level 'majorType' \
-    --barrier_phenotyping_level 'majorType' \
+    --phenotyping_column 'majorType' \
+    --barrier_phenotyping_column 'majorType' \
     --graph_type 'nearest_neighbour' \
     --outdir '../../results' \
     --release '2022-10-11_combined_tumour/p1' \
@@ -41,8 +41,8 @@ nextflow run ./main.nf \
     --metadata_delimiter '\t'\
     --objects '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/modified_objects_tables/20221011_release_KE/tx100_cell_objects_tx100_publication_p2_reassigned_majorType_KE.csv'\
     --objects_delimiter '\t'\
-    --phenotyping_level 'majorType' \
-    --barrier_phenotyping_level 'majorType' \
+    --phenotyping_column 'majorType' \
+    --barrier_phenotyping_column 'majorType' \
     --graph_type 'nearest_neighbour' \
     --outdir '../../results' \
     --release '2022-10-11_combined_tumour/p2' \

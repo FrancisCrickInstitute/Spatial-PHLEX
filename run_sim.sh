@@ -19,8 +19,8 @@ export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rub
 nextflow run ./main.nf \
     --objects '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/tx100/imc/outputs/spatial/simulations/simulated_barrier_objects_2022-03-27.csv'\
     --objects_delimiter ','\
-    --phenotyping_level 'cellType' \
-    --barrier_phenotyping_level 'cellType' \
+    --phenotyping_column 'cellType' \
+    --barrier_phenotyping_column 'cellType' \
     --graph_type 'nearest_neighbour' \
     --outdir '../../results' \
     --release '2022-11-29_full_circular_tumour_simulations' \
