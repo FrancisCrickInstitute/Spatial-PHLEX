@@ -18,15 +18,15 @@ export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rub
 
 
 nextflow run ./main.nf \
-    --sampleFile '/camp/project/proj-tracerx-lung/tctProjects/rubicon/tracerx/master_files/sampleFile/archive/sampleFile.tracerx.220815.txt'\
-    --objects '/camp/project/proj-tracerx-lung/tctProjects/rubicon/PHLEX/release_testing/Spatial-PHLEX/data/PHLEX_test_data.csv'\
+    --sampleFile "$PWD/data/sample_data.tracerx.txt"\
+    --objects "$PWD/../data/PHLEX_test_data.csv"\
     --phenotyping_column 'majorType' \
     --barrier_phenotyping_column 'majorType' \
-    --outdir '../results' \
+    --outdir '../results_2023-02-17' \
     --release 'PHLEX_test' \
     --workflow_name 'clustered_barrier' \
     --barrier_source_cell_type 'CD8 T cells'\
     --barrier_target_cell_type 'Epithelial cells'\
-    --barrier_cell_type 'Myofibroblasts'\
+    --barrier_cell_type 'aSMA+ cells'\
     -w '/camp/project/proj-tracerx-lung/txscratch/rubicon/Spatial-PHLEX/work'\
     # -resume
