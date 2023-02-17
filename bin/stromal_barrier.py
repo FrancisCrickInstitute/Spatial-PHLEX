@@ -40,7 +40,7 @@ def main(args):
 
     print(BARRIER_TYPES)
 
-    phenotyping_level = args.phenotyping_level #phenotyping_level # phenotyping_level, 'majorType', 'Positive', 'cellClass'
+    phenotyping_column = args.phenotyping_column #phenotyping_column # phenotyping_column, 'majorType', 'Positive', 'cellClass'
     
     # Define immune cell subtypes to measure the 'barrier' for:
     cellTypes = [args.source_cell_type] #['Myofibroblasts'] #['Myofibroblasts', 'Stromal', 'Endothelial']
@@ -64,18 +64,18 @@ def main(args):
     
     if LARGE_CLUSTERS_ONLY:
         # assign distal stroma epithelial cells to unassigned to test
-        objects.loc[(objects['imagename'] == imagename) & (objects[f'{target_cell_type}_cluster_area'] < 2000) & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = f'Unclustered {target_cell_type}'
+        objects.loc[(objects['imagename'] == imagename) & (objects[f'{target_cell_type}_cluster_area'] < 2000) & (objects[phenotyping_column] == f'{target_cell_type}'), phenotyping_column] = f'Unclustered {target_cell_type}'
     if EPI_NO_STROMA:
-        objects.loc[(objects['domain'] == 'Distal Stroma') & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = 'Unassigned'
+        objects.loc[(objects['domain'] == 'Distal Stroma') & (objects[phenotyping_column] == f'{target_cell_type}'), phenotyping_column] = 'Unassigned'
     
     if SIZE_THRESH_NO_UNCLUSTERED:
         # Alter unclustered
-        objects.loc[(objects[f'{target_cell_type}_spatial_cluster_id'] == -1) & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = f'Unclustered {target_cell_type}'
+        objects.loc[(objects[f'{target_cell_type}_spatial_cluster_id'] == -1) & (objects[phenotyping_column] == f'{target_cell_type}'), phenotyping_column] = f'Unclustered {target_cell_type}'
         # alter those in small clusters:
-        objects.loc[(objects[f'{target_cell_type}_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects[phenotyping_level] == f'{target_cell_type}'), phenotyping_level] = f'Unclustered {target_cell_type}'
+        objects.loc[(objects[f'{target_cell_type}_cluster_area'] < DOMAIN_SIZE_CUTOFF) & (objects[phenotyping_column] == f'{target_cell_type}'), phenotyping_column] = f'Unclustered {target_cell_type}'
 
     ## after filtering only proceed if there are epithelial cells that pass the criteria, else raise warning:   
-    if len(objects[objects[phenotyping_level] == f'{target_cell_type}'].index) > 0:
+    if len(objects[objects[phenotyping_column] == f'{target_cell_type}'].index) > 0:
 
         if imagename in objects['imagename'].unique():
 
@@ -86,19 +86,19 @@ def main(args):
 
             ## CREATE SPATIAL GRAPH
             if GRAPH_TYPE == 'spatial_neighbours':
-                spg = sb.compute_spatial_graph(objects, imagename, markers, phenotyping_level=phenotyping_level, radius=RADIUS)
+                spg = sb.compute_spatial_graph(objects, imagename, markers, phenotyping_column=phenotyping_column, radius=RADIUS)
                 G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
-                node_ids = sb.get_graph_node_ids(spg, phenotyping_level)
+                node_ids = sb.get_graph_node_ids(spg, phenotyping_column)
                 node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
             elif GRAPH_TYPE == 'nearest_neighbour':
-                spg = sb.compute_nn_graph(objects, imagename, markers, n_neighs=NEIGHBOURS, phenotyping_level=phenotyping_level)
+                spg = sb.compute_nn_graph(objects, imagename, markers, n_neighs=NEIGHBOURS, phenotyping_column=phenotyping_column)
                 G = nx.convert_matrix.from_scipy_sparse_matrix(spg.obsp['spatial_connectivities'])
-                node_ids = sb.get_graph_node_ids(spg, phenotyping_level)
+                node_ids = sb.get_graph_node_ids(spg, phenotyping_column)
                 node_label_dict = dict(zip(node_ids['vertex'], node_ids.index))
             elif GRAPH_TYPE == 'neighbouRhood':
 
                 # specify attributes to attach to nodes:
-                node_attr = [phenotyping_level]
+                node_attr = [phenotyping_column]
 
                 #read in adjacency data to n graph:
                 primary_nodes = [] 
@@ -130,7 +130,7 @@ def main(args):
                 all_vertex_chains = []
 
                 ## node ids of the target cell type:
-                cellType_node_ids = sb.get_cellType_node_ids(node_ids, phenotyping_level, cellType)
+                cellType_node_ids = sb.get_cellType_node_ids(node_ids, phenotyping_column, cellType)
                 if calculate_positivity:
                     positive_dict = dict(zip(node_ids['vertex'], node_ids['positive']))
 
@@ -152,7 +152,7 @@ def main(args):
                             print(shortest_paths)
 
                             ## what is the minimum path length to an epithelial cell?
-                            minpath_to_target = sb.min_path_to_cellType(shortest_paths, phenotyping_level, args.target_cell_type)
+                            minpath_to_target = sb.min_path_to_cellType(shortest_paths, phenotyping_column, args.target_cell_type)
                             print("minpath to target:", minpath_to_target)
 
                             # minpath to target will be call as 1.6..**308 if not connected (skip these)
@@ -160,12 +160,12 @@ def main(args):
 
                                 minimum_paths.append(minpath_to_target)
 
-                                closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_target) & (shortest_paths[phenotyping_level] == f'{target_cell_type}')]
+                                closest_epi = shortest_paths[(shortest_paths['distance'] == minpath_to_target) & (shortest_paths[phenotyping_column] == f'{target_cell_type}')]
                                 print('THIS IS THE CLOSEST EPI i.e. target DATAFRAME:')
                                 print(closest_epi)
                                 
-                                degenerate_barrier_fraction = sb.degenerate_path_content(closest_epi, shortest_paths, minpath_to_target, barrier_cells = BARRIER_TYPES, phenotyping_level=phenotyping_level)
-                                degenerate_adjacent_count = sb.degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_target, barrier_cells = BARRIER_TYPES, phenotyping_level=phenotyping_level)
+                                degenerate_barrier_fraction = sb.degenerate_path_content(closest_epi, shortest_paths, minpath_to_target, barrier_cells = BARRIER_TYPES, phenotyping_column=phenotyping_column)
+                                degenerate_adjacent_count = sb.degenerate_adjacent_barrier(closest_epi, shortest_paths, minpath_to_target, barrier_cells = BARRIER_TYPES, phenotyping_column=phenotyping_column)
 
                                 all_degenerate_counts.append(degenerate_barrier_fraction)
                                 all_degenerate_adjacent.append(degenerate_adjacent_count)
@@ -173,7 +173,7 @@ def main(args):
                                 if CALC_CHAIN == True:
                                     ## compute the chain of the shortest path to the epithelial cell:
                                     ## calculate the 'cell chain' along this path
-                                    cellchain, vertexes = sb.followchain(shortest_paths, minpath_to_target, source_cell=cellType, source_vertex=v, target_cell=target_cell_type, phenotyping_level=phenotyping_level)
+                                    cellchain, vertexes = sb.followchain(shortest_paths, minpath_to_target, source_cell=cellType, source_vertex=v, target_cell=target_cell_type, phenotyping_column=phenotyping_column)
 
                                     all_cellchains.append(cellchain)
                                     all_vertex_chains.append(vertexes)
@@ -257,7 +257,7 @@ if __name__ == '__main__':
     parser.add_argument('--panel', help='IMC panel name.')
     parser.add_argument('--permutation_region', help='Domain in which to permute cells. e.g. "tumour" or "stroma. Depends on this information being available in the cell objects table under column "region".')
     parser.add_argument('--permute_phenotypes', type = bool, help='Randomly permute cell phenotypes in a given domain.', default=False)
-    parser.add_argument('--phenotyping_level', help='Designation of the objects table column to use to determine phenotypes e.g. majorType or cellType, but depends can be other depending on columns in objects.csv')
+    parser.add_argument('--phenotyping_column', help='Designation of the objects table column to use to determine phenotypes e.g. majorType or cellType, but depends can be other depending on columns in objects.csv')
     parser.add_argument('--radius', type = float, help='radius for spatial neighbours graph')
     parser.add_argument('--root_out', help='Root output directory for saving.')
     parser.add_argument('--source_cell_type', help='source cell type for the shortest path calculation', default='CD8 T cells')
