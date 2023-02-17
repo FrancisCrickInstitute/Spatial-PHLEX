@@ -210,11 +210,11 @@ def get_image_shape(imagepath):
     shape = im.shape
     return shape
 
-def get_image_shape_from_metadata(metadata, imagename, default_shape = (1000,1000)):
-    metadata_cols = list(metadata)
-    if ('image_width' in metadata_cols) & ('image_height' in metadata_cols):
-        width = int(metadata[metadata['imagename'] == imagename]['image_width'].item())
-        height = int(metadata[metadata['imagename'] == imagename]['image_height'].item())
+def get_image_shape_from_sampleFile(sampleFile, imagename, default_shape = (1000,1000)):
+    sampleFile_cols = list(sampleFile)
+    if ('image_width' in sampleFile_cols) & ('image_height' in sampleFile_cols):
+        width = int(sampleFile[sampleFile['imagename'] == imagename]['image_width'].item())
+        height = int(sampleFile[sampleFile['imagename'] == imagename]['image_height'].item())
         shape = (height, width)
         return shape
     else:

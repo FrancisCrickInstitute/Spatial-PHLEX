@@ -96,19 +96,19 @@ def parse_wkt(wkt):
 def parse_imagename(path):
     return path.split('/')[-2]
 
-def parse_shape(metadata, imagename):
-    width = metadata[metadata['imagename'] == imagename]['image_width'].item()
-    height = metadata[metadata['imagename'] == imagename]['image_height'].item()
+def parse_shape(sampleFile, imagename):
+    width = sampleFile[sampleFile['imagename'] == imagename]['image_width'].item()
+    height = sampleFile[sampleFile['imagename'] == imagename]['image_height'].item()
     shape = (int(height), int(width))
     return shape
 
-def make_label(wktpath, metadata, shape):
+def make_label(wktpath, sampleFile, shape):
     wkt = pd.read_csv(wktpath)
 
     # get imagename and shape:
     imagename = parse_imagename(wktpath)
     print(f'Processing {imagename}.')
-    shape = parse_shape(metadata, imagename)
+    shape = parse_shape(sampleFile, imagename)
 
     reconstruction_path = wktpath.replace('alphashape_polygons_wkt.csv', 'alphashape_polygons_label.tiff')
 
@@ -134,7 +134,7 @@ def main(args):
     # cellType = args[0]
     # panel = args[1]
     # cellType_wkt_list = glob.glob(f'/camp/lab/swantonc/working/Alastair/spatial_analysis/spatial_clustering/results/single_cell_assignment/2021-09-25_release/tx100/{panel}/majorType/dbscan_25/min_size_0/alpha_0.05/{cellType}_clustering/*/*_alphashape_polygons_wkt.csv')
-    metadata = pd.read_csv(args[1], sep=args[2], encoding='latin1')
+    sampleFile = pd.read_csv(args[1], sep=args[2], encoding='latin1')
     # print(cellType_wkt_list)
     # print(len(cellType_wkt_list))
     # cellType_wkt_list.sort()
@@ -142,7 +142,7 @@ def main(args):
     #     # apply
     # for wkt in cellType_wkt_list:
 
-    # make_label(wkt_file, metadata)
+    # make_label(wkt_file, sampleFile)
 
 if __name__== '__main__':
     main(sys.argv[1:]) 

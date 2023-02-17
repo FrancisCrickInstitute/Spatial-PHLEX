@@ -12,7 +12,7 @@ from tqdm import *
 import skimage.io as io
 
 from spclust_util import (assemble_cluster_polygons, assign_to_spclust,
-                          do_clustering, get_image_shape, get_image_shape_from_metadata, plot_clusters,
+                          do_clustering, get_image_shape, get_image_shape_from_sampleFile, plot_clusters,
                           save_cluster_alphashapes, pipeline_make_label)
 
 
@@ -45,11 +45,11 @@ class config(object):
         # object table separator:
         self.OBJECT_SEP = args.objects_sep
 
-        # path to metadata file:
-        self.metadata = args.metadata_filepath
+        # path to sampleFile file:
+        self.sampleFile = args.sampleFile_filepath
 
-        # separator of metadata file:
-        self.MSEP = args.metadata_sep
+        # separator of sampleFile file:
+        self.MSEP = args.sampleFile_sep
 
         # alphashape curvature parameter:
         self.ALPHA = 0.05  
@@ -82,10 +82,10 @@ def main(CONFIG):
     # define imagename to be processed:
     imagename = CONFIG.IMAGENAME
 
-    # read metadata
-    if CONFIG.metadata is not None:
-        metadata = pd.read_csv(CONFIG.metadata, sep = CONFIG.MSEP, encoding='latin1')
-        imshape = get_image_shape_from_metadata(metadata, imagename) 
+    # read sampleFile
+    if CONFIG.sampleFile is not None:
+        sampleFile = pd.read_csv(CONFIG.sampleFile, sep = CONFIG.MSEP, encoding='latin1')
+        imshape = get_image_shape_from_sampleFile(sampleFile, imagename) 
     else:
         imshape = (1000,1000)
     
@@ -191,8 +191,8 @@ if __name__ == "__main__":
     parser.add_argument('--imagename', type=str, default='test_image', help='name of image to be processed')
     parser.add_argument('--objects_filepath', type=str, default='test_objects.csv', help='path to objects file')
     parser.add_argument('--objects_sep', type=str, default=';', help='separator in objects file')
-    parser.add_argument('--metadata_filepath', type=str, default=None, help='path to metadata file')
-    parser.add_argument('--metadata_sep', type=str, default='\t', help='separator in metadata file')
+    parser.add_argument('--sampleFile_filepath', type=str, default=None, help='path to sampleFile file')
+    parser.add_argument('--sampleFile_sep', type=str, default='\t', help='separator in sampleFile file')
     parser.add_argument('--root_outdir', type=str, default='.', help='path to output directory')
     parser.add_argument('--eps', type=float, default=25, help='eps parameter for dbscan')
     parser.add_argument('--min_s', type=int, default=1, help='min number of cells in a cluster')
