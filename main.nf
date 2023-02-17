@@ -27,9 +27,7 @@ if (params.neighborhood_input) {
         .map { it }
         .ifEmpty { exit 1, "Input file not found: ${params.neighborhood_input}" }
         .set { ch_nhood }
-} else {
-   exit 1, "Neighbourhood input file not specified!"
-}
+} 
 
 ch_phenotyping = ch_phenotyping.first() // this will take only the first phenotyping level even if multiple are specified -- > deprecate multiple input?
 

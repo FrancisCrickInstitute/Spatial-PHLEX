@@ -31,7 +31,7 @@ class config(object):
         # print(self.COHORT, self.PANEL)
 
         # what level of phenotyping, majorType or cellType:
-        self.PHENOTYPING_LEVEL = args.phenotyping_level
+        self.PHENOTYPING_COLUMN = args.phenotyping_column
 
         # EPS density parameter:
         self.EPS = args.eps
@@ -55,7 +55,7 @@ class config(object):
         self.ALPHA = 0.05  
 
         # base output directory:
-        self.ROOT_OUTDIR = f'{args.root_outdir}/{args.phenotyping_level}/dbscan_{args.eps}/min_size_{args.min_s}/alpha_{args.alpha}'
+        self.ROOT_OUTDIR = f'{args.root_outdir}/{args.phenotyping_column}/dbscan_{args.eps}/min_size_{args.min_s}/alpha_{args.alpha}'
 
         
 
@@ -96,8 +96,8 @@ def main(CONFIG):
     print(phenotype_df)
 
     # define probe cell types and clustering cell types
-    probe_cell_types = phenotype_df[CONFIG.PHENOTYPING_LEVEL].unique() 
-    clustering_cell_types = phenotype_df[CONFIG.PHENOTYPING_LEVEL].unique() # ['Epithelial cells']
+    probe_cell_types = phenotype_df[CONFIG.PHENOTYPING_COLUMN].unique() 
+    clustering_cell_types = phenotype_df[CONFIG.PHENOTYPING_COLUMN].unique() # ['Epithelial cells']
 
     # create base output directory:
     if os.path.exists(CONFIG.ROOT_OUTDIR) != True:
@@ -126,7 +126,7 @@ def main(CONFIG):
 
         # perform DBSCAN clustering for cellType:
         print('\nPerforming spatial clustering of {}.'.format(cType))
-        clustering_cells_df = image_df.loc[image_df[CONFIG.PHENOTYPING_LEVEL] == cType]
+        clustering_cells_df = image_df.loc[image_df[CONFIG.PHENOTYPING_COLUMN] == cType]
 
         if len(clustering_cells_df.index) > 0:
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument('--eps', type=float, default=25, help='eps parameter for dbscan')
     parser.add_argument('--min_s', type=int, default=1, help='min number of cells in a cluster')
     parser.add_argument('--alpha', type=float, default=0.05, help='alpha parameter for alphashape')
-    parser.add_argument('--phenotyping_level', type=str, default='cellType', help='what level of phenotyping, majorType or cellType')
+    parser.add_argument('--phenotyping_column', type=str, default='cellType', help='what level of phenotyping, majorType or cellType')
     args = parser.parse_args()
 
 
