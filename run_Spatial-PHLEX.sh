@@ -19,7 +19,7 @@ export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rub
 
 nextflow run ./main.nf \
     --sampleFile "$PWD/data/sample_data.tracerx.txt"\
-    --objects "$PWD/../data/PHLEX_test_data.csv"\
+    --objects "$PWD/../../data/PHLEX_test_data.csv"\
     --phenotyping_column 'majorType' \
     --barrier_phenotyping_column 'majorType' \
     --outdir '../results_2023-02-17' \

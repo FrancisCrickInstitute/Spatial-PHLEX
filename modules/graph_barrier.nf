@@ -7,7 +7,7 @@ process NEIGHBOURHOOD_GRAPH {
 	// time "0.25h"
 	// clusterOptions "--part=cpu --mem=2GB"
 
-    publishDir "${params.outdir}/${params.release}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/adjacency_lists/neighbourhood", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         val nhood_file
@@ -34,7 +34,7 @@ process GRAPH_BARRIER {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    publishDir "${params.outdir}/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         tuple val(imagename), path(spclustered_objects)
@@ -71,7 +71,7 @@ process NN_BARRIER {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         path objects
@@ -108,7 +108,7 @@ process NEIGHBOURHOOD_BARRIER {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         tuple val(imagename), path(adj_list)
@@ -143,7 +143,7 @@ process AGGREGATE_SCORES {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    publishDir "${params.outdir}/${params.release}/graph/aggregated_barrier_scoring", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/aggregated_barrier_scoring", mode: params.publish_dir_mode, overwrite: params.overwrite
     
     input:
         path scores
