@@ -28,14 +28,14 @@ process SPATIAL_CLUSTERING {
     
 
     shell:
-        if (params.metadata)
+        if (params.sampleFile)
             '''
             single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
                 --phenotyping_column !{level} \
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
-                --metadata_filepath !{params.metadata} \
-                --metadata_sep $'!{params.metadata_delimiter}' \
+                --sampleFile_filepath !{params.sampleFile} \
+                --sampleFile_sep $'!{params.sampleFile_delimiter}' \
                 --root_outdir .
             '''
         else 
