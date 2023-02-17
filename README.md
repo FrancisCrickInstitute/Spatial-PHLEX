@@ -21,19 +21,15 @@ Spatial-PHLEX can be run in multiple modes:
 
 ```bash
 nextflow run ./main.nf \
-    --metadata '/path/to/metadata.txt'\
-    --metadata_delimiter '\t'\
-    --objects "/path/to/cell_objects.csv" \
-    --objects_delimiter '\t'\
-    --phenotyping_column 'cellType' \
-    --barrier_phenotyping_column 'cellType' \
-    --graph_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/rapids-22.02" \
-    --graph_type 'nearest_neighbour' \
-    --md_conda 'Anaconda3' \
-    --outdir '../../results' \
-    --release '2022-08-30_DSL2_dev_b' \
-    --spclust_conda_env "/camp/lab/swantonc/working/Alastair/.conda/envs/tf" \
-    --workflow_name 'default' \
-    --dev \
-    -resume
+    --sampleFile "/path/to/sample_data.tracerx.txt"\
+    --objects "/path/to/PHLEX_test_data.csv"\
+    --phenotyping_column 'majorType' \
+    --barrier_phenotyping_column 'majorType' \
+    --outdir '../results' \
+    --release 'PHLEX_test' \
+    --workflow_name 'clustered_barrier' \
+    --barrier_source_cell_type 'CD8 T cells'\
+    --barrier_target_cell_type 'Epithelial cells'\
+    --barrier_cell_type 'aSMA+ cells'\
+    -w '/path/to/scratch_directory'\
 ```
