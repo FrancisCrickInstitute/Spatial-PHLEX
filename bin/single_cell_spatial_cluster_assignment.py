@@ -83,7 +83,7 @@ def main(CONFIG):
     imagename = CONFIG.IMAGENAME
 
     # read sampleFile
-    if CONFIG.sampleFile is not None:
+    if CONFIG.sampleFile != None:
         sampleFile = pd.read_csv(CONFIG.sampleFile, sep = CONFIG.MSEP, encoding='latin1')
         imshape = get_image_shape_from_sampleFile(sampleFile, imagename) 
     else:
