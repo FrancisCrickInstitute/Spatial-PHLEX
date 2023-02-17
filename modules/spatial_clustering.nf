@@ -9,7 +9,7 @@ process SPATIAL_CLUSTERING {
 	// clusterOptions "--part=cpu --mem=2GB"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    publishDir "${params.outdir}/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         val(objects)
@@ -59,7 +59,7 @@ process INTRACLUSTER_DENSITY {
     time "1h"
     clusterOptions "--part=cpu --mem=4GB"
 
-    publishDir "${params.outdir}/${params.release}/spatial_clustering/intracluster_density/${params.phenotyping_column}/${imagename}/${cellType}", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering/intracluster_density/${params.phenotyping_column}/${imagename}/${cellType}", mode: params.publish_dir_mode, overwrite: params.overwrite
     
     input:
         tuple val(imagename), val(cellType), path(data)
