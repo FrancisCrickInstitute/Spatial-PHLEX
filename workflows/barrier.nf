@@ -1,4 +1,4 @@
-include { NEIGHBOURHOOD_GRAPH; NEIGHBOURHOOD_BARRIER; NN_BARRIER} from '../modules/graph_barrier.nf'
+include { NEIGHBOURHOOD_GRAPH; NN_BARRIER} from '../modules/graph_barrier.nf'
 include { GENERATE_IMAGENAMES } from '../modules/util.nf'
 
 def generate_imagenames(file){

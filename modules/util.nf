@@ -12,7 +12,7 @@ process GENERATE_IMAGENAMES {
     
     shell:
     '''
-    generate_imagenames.py --objects '!{objects}' --delimiter $'!{params.objects_delimiter}'
+    generate_imagenames.py --objects '!{objects}' --image_id_col !{params.image_id_col} --delimiter $'!{params.objects_delimiter}'
     '''
 
 }
