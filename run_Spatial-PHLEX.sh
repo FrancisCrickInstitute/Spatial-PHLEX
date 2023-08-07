@@ -18,15 +18,19 @@ export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rub
 
 
 nextflow run ./main.nf \
-    --sampleFile "$PWD/data/sample_data.tracerx.txt"\
-    --objects "$PWD/../../data/PHLEX_test_data.csv"\
-    --phenotyping_column 'majorType' \
-    --barrier_phenotyping_column 'majorType' \
-    --outdir '../results_2023-02-17' \
-    --release 'PHLEX_test' \
-    --workflow_name 'clustered_barrier' \
-    --barrier_source_cell_type 'CD8 T cells'\
-    --barrier_target_cell_type 'Epithelial cells'\
-    --barrier_cell_type 'aSMA+ cells'\
+    --objects "/camp/lab/swantonc/working/Alastair/other_crick_imaging/megan_cole/data/dataset2_communityC_MRTX_Tregs_barrier_scoring_input_2.csv"\
+    --objects_delimiter ','\
+    --image_id_col "Image_ID"\
+    --x_id "Location_Center_X"\
+    --y_id "Location_Center_Y"\
+    --barrier_phenotyping_column "Cell_phenotype" \
+    --outdir "../results" \
+    --release 'MRTX_barrier' \
+    --workflow_name 'barrier_only' \
+    --barrier_source_cell_type "T cells CD8"\
+    --barrier_target_cell_type "Dendritic cells"\
+    --barrier_cell_type "T reg cells"\
+    --singularity_bind_path '/camp,/nemo'\
+    --n_neighbours 2\
     -w '/camp/project/proj-tracerx-lung/txscratch/rubicon/Spatial-PHLEX/work'\
-    # -resume
+    -resume

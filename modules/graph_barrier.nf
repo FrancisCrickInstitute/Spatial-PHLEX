@@ -47,8 +47,11 @@ process GRAPH_BARRIER {
     shell:
         '''
         stromal_barrier.py --graph_type !{params.graph_type} \
-            --source_cell_type '!{params.barrier_source_cell_type}' \
-            --target_cell_type '!{params.barrier_target_cell_type}' \
+            --source_cell_type '!{params.barrier_source_cell_type}'' \
+            --target_cell_type !'{params.barrier_target_cell_type}'' \
+            --image_id_col !{params.image_id_col} \
+            --x_id !{params.x_id} \
+            --y_id !{params.y_id} \
             --imagename !{imagename} \
             --neighbours !{params.n_neighbours} \
             --root_out . \
@@ -71,7 +74,7 @@ process NN_BARRIER {
     time "6h"
     clusterOptions "--part=gpu --gres=gpu:1"
 
-    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
+    publishDir "${params.outdir}/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
     input:
         path objects
@@ -87,52 +90,56 @@ process NN_BARRIER {
         stromal_barrier.py --graph_type !{params.graph_type} \
             --source_cell_type '!{params.barrier_source_cell_type}' \
             --target_cell_type '!{params.barrier_target_cell_type}' \
-            --imagename !{imagename} \
+            --image_id_col '!{params.image_id_col}' \
+            --x_id '!{params.x_id}' \
+            --y_id '!{params.y_id}' \
+            --imagename '!{imagename}' \
             --neighbours !{params.n_neighbours} \
             --root_out . \
             --objects_path !{objects} \
-            --objects_sep $'!{params.objects_delimiter}' \
+            --objects_sep '!{params.objects_delimiter}' \
             --barrier_types '!{params.barrier_cell_type}' \
-            --phenotyping_column !{params.barrier_phenotyping_column} \
+            --phenotyping_column '!{params.barrier_phenotyping_column}' \
         '''
 }
 
-process NEIGHBOURHOOD_BARRIER {
-    /*
-    Run graph barrier scoring without spatial clustering with neighbouRhood graph construction.
-    */
+// process NEIGHBOURHOOD_BARRIER {
+//     /*
+//     Run graph barrier scoring without spatial clustering with neighbouRhood graph construction.
+//     */
 
-    tag "${imagename}"
+//     tag "${imagename}"
 
-    executor "slurm"
-    time "6h"
-    clusterOptions "--part=gpu --gres=gpu:1"
+//     executor "slurm"
+//     time "6h"
+//     clusterOptions "--part=gpu --gres=gpu:1"
 
-    publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
+//     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
-    input:
-        tuple val(imagename), path(adj_list)
-        path objects
+//     input:
+//         tuple val(imagename), path(adj_list)
+//         path objects
 
-    output:
-        path "**/*.csv" optional true //, emit: ch_barrier_results_nb
+//     output:
+//         path("**/*.csv"), optional: true //, emit: ch_barrier_results_nb
 
-    shell:
-
-        '''
-        stromal_barrier.py --graph_type !{params.graph_type}\
-        --imagename !{imagename} \
-        --neighbourhood_radius 5 \
-        --adjacency_data_path !{adj_list} \
-        --root_out . \
-        --objects_path !{objects} \
-        --objects_sep $'!{params.objects_delimiter}' \
-        --calc_chain True \
-        --barrier_types Myofibroblasts \
-        --phenotyping_column !{params.barrier_phenotyping_column} \
-        '''
-
-}
+//     shell:
+//         '''
+//             stromal_barrier.py --graph_type !{params.graph_type}\
+//                 --imagename !{imagename}\            
+//                 --image_id_col !{params.image_id_col} \
+//                 --x_id !{params.x_id} \
+//                 --y_id !{params.y_id} \
+//                 --neighbourhood_radius 5 \
+//                 --adjacency_data_path !{adj_list} \
+//                 --root_out . \
+//                 --objects_path !{objects} \
+//                 --objects_sep $'!{params.objects_delimiter}' \
+//                 --calc_chain True \
+//                 --barrier_types Myofibroblasts \
+//                 --phenotyping_column !{params.barrier_phenotyping_column}
+//         '''
+// }
 
 process AGGREGATE_SCORES {
     /*
