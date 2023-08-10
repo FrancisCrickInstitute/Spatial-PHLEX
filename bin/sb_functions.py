@@ -384,7 +384,7 @@ def adjacent_barrier_call(chain, BARRIER_TYPES):
     return barrier
 
 
-def degenerate_path_content(
+def allpaths_path_content(
     closest_epi,
     shortest_paths,
     minpath_to_epi,
@@ -420,16 +420,16 @@ def degenerate_path_content(
                     p = pdf["predecessor"].item()
                     path_cells.append(pdf)
 
-            degenerate_path_content = pd.concat(path_cells)
+            allpaths_path_content = pd.concat(path_cells)
 
             if (
                 set(barrier_cells).intersection(
-                    set(degenerate_path_content[phenotyping_column])
+                    set(allpaths_path_content[phenotyping_column])
                 )
                 != set()
             ):
                 myofibroblast_fraction_degen = (
-                    degenerate_path_content[phenotyping_column]
+                    allpaths_path_content[phenotyping_column]
                     .value_counts(normalize=True)[barrier_cells]
                     .sum()
                 )
@@ -440,7 +440,7 @@ def degenerate_path_content(
     return myofibroblast_fraction_degen
 
 
-def degenerate_adjacent_barrier(
+def allpaths_adjacent_barrier(
     closest_epi,
     shortest_paths,
     minpath_to_epi,
@@ -476,9 +476,9 @@ def degenerate_adjacent_barrier(
                     p = pdf["predecessor"].item()
                     path_cells.append(pdf)
 
-            degenerate_path_content = pd.concat(path_cells)
-            adjacent_cells_df = degenerate_path_content[
-                degenerate_path_content["distance"] == (minpath_to_epi - 1)
+            allpaths_path_content = pd.concat(path_cells)
+            adjacent_cells_df = allpaths_path_content[
+                allpaths_path_content["distance"] == (minpath_to_epi - 1)
             ]
 
             if (
