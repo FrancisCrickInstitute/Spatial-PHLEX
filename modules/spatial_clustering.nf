@@ -31,7 +31,8 @@ process SPATIAL_CLUSTERING {
         if (params.sampleFile)
             '''
             single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
-                --phenotyping_column !{level} \
+                --phenotyping_column '!{level}' \
+                --phenotype_to_cluster '!{params.phenotype_to_cluster}'\
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
                 --sampleFile_filepath !{params.sampleFile} \
@@ -41,7 +42,8 @@ process SPATIAL_CLUSTERING {
         else 
             '''
             single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
-                --phenotyping_column !{level} \
+                --phenotyping_column '!{level}' \
+                --phenotype_to_cluster '!{params.phenotype_to_cluster}'\
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
                 --root_outdir .

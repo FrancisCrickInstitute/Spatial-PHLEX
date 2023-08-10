@@ -21,16 +21,20 @@ nextflow run ./main.nf \
     --objects "/nemo/project/proj-tracerx-lung/tctProjects/rubicon/PHLEX/revision_testing/angelom_typex_mccs/cell_objects_revision_p1.txt"\
     --objects_delimiter "\t" \
     --image_id_col "imagename"\
+    --phenotyping_column 'majorType'\
+    --phenotype_to_cluster 'Epithelial cells'\
     --x_id "centerX"\
     --y_id "centerY"\
     --barrier_phenotyping_column "majorType" \
     --outdir "../results" \
-    --release 'PHLEX_example' \
+    --release 'PHLEX_edit_chatgpt_2' \
     --workflow_name 'clustered_barrier' \
     --barrier_source_cell_type "CD8 T cells"\
     --barrier_target_cell_type "Epithelial cells"\
     --barrier_cell_type "aSMA+ cells"\
     --singularity_bind_path '/camp,/nemo'\
     --n_neighbours 5\
+    --dev \
+    --number_of_inputs 1 \
     -w "/camp/project/proj-tracerx-lung/txscratch/rubicon/deep_imcyto/work"\
     -resume

@@ -1,209 +1,234 @@
 #!/usr/bin/env python
 
 import os
-from re import I
-import sys
 import argparse
 
 import numpy as np
 import pandas as pd
-from sklearn.feature_extraction import img_to_graph
 from tqdm import *
 import skimage.io as io
 
-from spclust_util import (assemble_cluster_polygons, assign_to_spclust,
-                          do_clustering, get_image_shape, get_image_shape_from_sampleFile, plot_clusters,
-                          save_cluster_alphashapes, pipeline_make_label)
+from spclust_util import (
+    assemble_cluster_polygons,
+    assign_to_spclust,
+    do_clustering,
+    get_image_shape_from_sampleFile,
+    plot_clusters,
+    save_cluster_alphashapes,
+    pipeline_make_label,
+)
 
-
-class config(object):
-
+class Config:
     def __init__(self, args):
-
-        # study cohort (from command line):
-        self.IMAGENAME = args.imagename
-
-        # TODO: move cohort and panel to nextflow script and pass root_out constructed from them through command line
-        # self.COHORT = c
-
-        # # IMC panel (from command line):
-        # self.PANEL = p
-        # print(self.COHORT, self.PANEL)
-
-        # what level of phenotyping, majorType or cellType:
-        self.PHENOTYPING_COLUMN = args.phenotyping_column
-
-        # EPS density parameter:
-        self.EPS = args.eps
-
-        # minimum samples for clustering
-        self.MIN_S = args.min_s
-
-        # path to dataframe file containing phenotype locations:
-        self.OBJECTS_FILEPATH = args.objects_filepath
-
-        # object table separator:
-        self.OBJECT_SEP = args.objects_sep
-
-        # path to sampleFile file:
-        self.sampleFile = args.sampleFile_filepath
-
-        # separator of sampleFile file:
-        self.MSEP = args.sampleFile_sep
-
-        # alphashape curvature parameter:
-        self.ALPHA = 0.05  
-
-        # base output directory:
-        self.ROOT_OUTDIR = f'{args.root_outdir}/{args.phenotyping_column}/dbscan_{args.eps}/min_size_{args.min_s}/alpha_{args.alpha}'
-
-        
+        self.imagename = args.imagename
+        self.phenotyping_column = args.phenotyping_column
+        self.phenotype_to_cluster = args.phenotype_to_cluster
+        self.eps = args.eps  # eps parameter for dbscan
+        self.min_s = args.min_s  # min number of cells in a cluster
+        self.objects_filepath = args.objects_filepath
+        self.objects_sep = args.objects_sep
+        self.sampleFile = args.sampleFile
+        self.sampleFile_sep = args.sampleFile_sep
+        self.alpha = 0.05  # Alphashape curvature parameter
+        self.root_outdir = f"{args.root_outdir}/{args.phenotyping_column}/eps_{args.eps}_min_size_{args.min_s}_alpha_{args.alpha}"
 
     def display(self):
         """Display Configuration values."""
-        print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("_____CONFIG:_____")
-        for a in dir(self):
-            if not a.startswith("__") and not callable(getattr(self, a)):
-                print("{:30} {}".format(a, getattr(self, a)))
-        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        print("\n")
+        print("\n" + "~" * 140)
+        print("CONFIG:")
+        for attribute, value in vars(self).items():
+            if not attribute.startswith("__") and not callable(value):
+                print(f"{attribute:30} {value}")
+        print("~" * 140 + "\n")
+
+
+def process_image(imagename, cType, image_df, imshape):
+    """Cluster a given image with DBSCAN for the specified cType.
+    Args:
+        imagename (str): name of image to be processed
+        cType (str): cell type to be clustered
+        image_df (pd.DataFrame): dataframe containing cell objects for that image
+        imshape (tuple): shape of image
+
+    Returns:
+        None
+
+    Creates:
+        - output directory for image
+        - cluster assignments for each cell
+        - cluster polygons
+        - cluster alphashapes
+        - cluster assignment label image
+        - plots of clusters
+    """
+
+    out_dir = os.path.join(CONFIG.root_outdir, f"{cType}/{imagename}")
+    os.makedirs(out_dir, exist_ok=True)
+
+    clustering_cells_df = image_df.loc[image_df[CONFIG.phenotyping_column] == cType]
+
+    if len(clustering_cells_df) > 0:
+        cluster_labels = do_clustering(clustering_cells_df, CONFIG.eps, CONFIG.min_s)
+
+        clustering_cells_df["dbscan_cluster"] = cluster_labels
+
+        spatial_cluster_polygons = assemble_cluster_polygons(
+            clustering_cells_df, cluster_labels, imagename, cType, alpha=CONFIG.alpha
+        )
+        alphashape_df = save_cluster_alphashapes(
+            spatial_cluster_polygons, cType, imagename, out_dir
+        )
+
+        all_cells_list = list(
+            zip(image_df["centerX"].values, image_df["centerY"].values)
+        )
+        (
+            spclust_assignments,
+            cluster_areas,
+            nearest_cluster,
+            distances,
+        ) = assign_to_spclust(all_cells_list, spatial_cluster_polygons)
+
+        image_df[f"{cType}_spatial_cluster_id"] = spclust_assignments
+        image_df[f"{cType}_cluster_area"] = cluster_areas
+        image_df[f"nearest_{cType}_cluster_id"] = nearest_cluster
+        image_df[f"distance_to_nearest_{cType}_cluster_boundary"] = distances
+
+        alphashape_spath = os.path.join(
+            out_dir, f"{imagename}_{cType}_alphashape_polygons_label.tiff"
+        )
+        pipeline_make_label(alphashape_df, imshape, alphashape_spath)
+
+    else:
+        clustering_cells_df["dbscan_cluster"] = []
+        cols_to_fill = [
+            f"{cType}_{col}"
+            for col in [
+                "spatial_cluster_id",
+                "cluster_area",
+                "nearest_cluster_id",
+                "distance_to_nearest_cluster_boundary",
+            ]
+        ]
+        image_df[cols_to_fill] = -1, np.nan, -1, np.nan
+
+        alphashape_mask = np.zeros(imshape)
+        alphashape_spath = os.path.join(
+            out_dir, f"{imagename}_{cType}_alphashape_polygons_label.tiff"
+        )
+        io.imsave(alphashape_spath, alphashape_mask)
+
+    spath = os.path.join(out_dir, f"{imagename}_object_cluster_assignment.csv")
+    image_df.to_csv(spath, sep=CONFIG.objects_sep)
+
+    plot_clusters(
+        clustering_cells_df,
+        clustering_cells_df["dbscan_cluster"].values,
+        imshape,
+        imagename,
+        cType,
+        out_dir,
+        alphashape_param=CONFIG.alpha,
+    )
+
+    print(f"\n{imagename} done.")
 
 
 ########
 # MAIN #
 ########
 
-def main(CONFIG):
 
+def main(CONFIG):
     # display configuration:
     CONFIG.display()
 
     # define imagename to be processed:
-    imagename = CONFIG.IMAGENAME
+    imagename = CONFIG.imagename
 
     # read sampleFile
     if CONFIG.sampleFile != None:
-        sampleFile = pd.read_csv(CONFIG.sampleFile, sep = CONFIG.MSEP, encoding='latin1')
-        imshape = get_image_shape_from_sampleFile(sampleFile, imagename) 
+        sampleFile = pd.read_csv(
+            CONFIG.sampleFile, sep=CONFIG.sampleFile_sep, encoding="latin1"
+        )
+        imshape = get_image_shape_from_sampleFile(sampleFile, imagename)
     else:
-        imshape = (1000,1000)
-    
+        imshape = (1000, 1000)
 
     # read df:
-    phenotype_df = pd.read_csv(CONFIG.OBJECTS_FILEPATH, sep=CONFIG.OBJECT_SEP, encoding='latin1')
+    cell_objects = pd.read_csv(
+        CONFIG.objects_filepath, sep=CONFIG.objects_sep, encoding="latin1"
+    )
 
-    print(phenotype_df)
-
-    # define probe cell types and clustering cell types
-    probe_cell_types = phenotype_df[CONFIG.PHENOTYPING_COLUMN].unique() 
-    clustering_cell_types = phenotype_df[CONFIG.PHENOTYPING_COLUMN].unique() # ['Epithelial cells']
+    if CONFIG.phenotype_to_cluster == "all":
+        clustering_cell_types = cell_objects[
+            CONFIG.phenotyping_column
+        ].unique()  # ['Epithelial cells']
+    else:
+        clustering_cell_types = [CONFIG.phenotype_to_cluster]
 
     # create base output directory:
-    if os.path.exists(CONFIG.ROOT_OUTDIR) != True:
-        os.makedirs(CONFIG.ROOT_OUTDIR)  
+    if os.path.exists(CONFIG.root_outdir) != True:
+        os.makedirs(CONFIG.root_outdir)
 
-    print("probe cell types:", probe_cell_types)
-    print("clustering cell types: ", clustering_cell_types)
+    image_df = cell_objects.loc[cell_objects["imagename"] == imagename]
 
-    # loop over all cellTypes to be clustered:
     for cType in clustering_cell_types:
+        process_image(imagename, cType, image_df, imshape)
 
-        # PROCESS IMAGE #
-               
-        # create out directory:
-        out_dir = os.path.join(CONFIG.ROOT_OUTDIR, '{}/{}'.format(cType, imagename))
-        if os.path.exists(out_dir) != True:
-            os.makedirs(out_dir)
-        
-        # extract df for imagename:
-        image_df = phenotype_df.loc[phenotype_df['imagename'] == imagename]
-
-        print('\nimage_df:\n', image_df)
-
-        # get dataframe of locations of all cells to be compared to clustered cell type:
-        all_cells_list = list(zip(image_df['centerX'].values, image_df['centerY'].values)) # list of cells of Type
-
-        # perform DBSCAN clustering for cellType:
-        print('\nPerforming spatial clustering of {}.'.format(cType))
-        clustering_cells_df = image_df.loc[image_df[CONFIG.PHENOTYPING_COLUMN] == cType]
-
-        if len(clustering_cells_df.index) > 0:
-
-            #obtain cluster labels with dbscan clusterinbg:
-            cluster_labels = do_clustering(clustering_cells_df, CONFIG.EPS, CONFIG.MIN_S)
-
-            # add clusters to dataframe:
-            clustering_cells_df['dbscan_cluster'] = cluster_labels
-
-            # get list of shapely polygons describing boundaries of DBSCAN clusters:
-            spatial_cluster_polygons = assemble_cluster_polygons(clustering_cells_df, cluster_labels, imagename, cType, alpha = CONFIG.ALPHA)
-            print('\n {} spatial clusters with > {} cells.'.format(len(spatial_cluster_polygons), CONFIG.MIN_S))
-
-            # save alphashapes to csv dataframe:
-            alphashape_df = save_cluster_alphashapes(spatial_cluster_polygons, cType, imagename, out_dir)
-
-            # assign + measure distances of single cells to dbscan clusters:
-            print('\nPerforming assignment of cells to spatial clusters.')
-            spclust_assignments, cluster_areas, nearest_cluster, distances = assign_to_spclust(all_cells_list, spatial_cluster_polygons)
-
-            # append info to cellTyping dataframe:
-            image_df['{}_spatial_cluster_id'.format(cType)] = spclust_assignments
-            image_df['{}_cluster_area'.format(cType)] = cluster_areas
-            image_df['nearest {}_cluster_id'.format(cType)] = nearest_cluster
-            image_df['distance to nearest {}_cluster_boundary'.format(cType)] = distances
-
-            # Save alphashape mask:
-            alphashape_spath = os.path.join(out_dir, f'{imagename}_{cType}_alphashape_polygons_label.tiff')
-            pipeline_make_label(alphashape_df, imshape, alphashape_spath)
-
-           
-        
-        else:
-            # if no epithelial cells present, isntantiate empty dbscan cluster column and assign appropriate values to other cell types:
-            clustering_cells_df['dbscan_cluster'] = []
-            image_df['{}_spatial_cluster_id'.format(cType)] = -1
-            image_df['{}_cluster_area'.format(cType)] = np.nan
-            image_df['nearest {}_cluster_id'.format(cType)] = -1
-            image_df['distance to nearest {}_cluster_boundary'.format(cType)] = np.nan
-
-            # empty alphashape mask:
-            alphashape_mask = np.zeros(imshape)
-            alphashape_spath = os.path.join(out_dir, f'{imagename}_{cType}_alphashape_polygons_label.tiff')
-            io.imsave(alphashape_spath, alphashape_mask)
-
-
-        # save dataframes to out_dir:
-        spath = os.path.join(out_dir, '{}_object_cluster_assignment.csv'.format(imagename))
-        image_df.to_csv(spath, sep=CONFIG.OBJECT_SEP)
-        print('\n{} done.'.format(imagename))
-        
-
-        # PLOT CLUSTERS WITH ALPHASHAPE:         
-        plot_clusters(clustering_cells_df, clustering_cells_df['dbscan_cluster'].values, imshape, imagename, cType, out_dir, alphashape_param=CONFIG.ALPHA)
-        
-        print('\nDone.')
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--imagename', type=str, default='test_image', help='name of image to be processed')
-    parser.add_argument('--objects_filepath', type=str, default='test_objects.csv', help='path to objects file')
-    parser.add_argument('--objects_sep', type=str, default=';', help='separator in objects file')
-    parser.add_argument('--sampleFile_filepath', type=str, default=None, help='path to sampleFile file')
-    parser.add_argument('--sampleFile_sep', type=str, default='\t', help='separator in sampleFile file')
-    parser.add_argument('--root_outdir', type=str, default='.', help='path to output directory')
-    parser.add_argument('--eps', type=float, default=25, help='eps parameter for dbscan')
-    parser.add_argument('--min_s', type=int, default=1, help='min number of cells in a cluster')
-    parser.add_argument('--alpha', type=float, default=0.05, help='alpha parameter for alphashape')
-    parser.add_argument('--phenotyping_column', type=str, default='cellType', help='what level of phenotyping, majorType or cellType')
+    parser.add_argument(
+        "--imagename",
+        type=str,
+        default="test_image",
+        help="name of image to be processed",
+    )
+    parser.add_argument(
+        "--objects_filepath",
+        type=str,
+        default="test_objects.csv",
+        help="path to objects file",
+    )
+    parser.add_argument(
+        "--objects_sep", type=str, default=";", help="separator in objects file"
+    )
+    parser.add_argument(
+        "--sampleFile", type=str, default=None, help="path to sampleFile file"
+    )
+    parser.add_argument(
+        "--sampleFile_sep", type=str, default="\t", help="separator in sampleFile file"
+    )
+    parser.add_argument(
+        "--root_outdir", type=str, default=".", help="path to output directory"
+    )
+    parser.add_argument(
+        "--eps", type=float, default=25, help="eps parameter for dbscan"
+    )
+    parser.add_argument(
+        "--min_s", type=int, default=1, help="min number of cells in a cluster"
+    )
+    parser.add_argument(
+        "--alpha", type=float, default=0.05, help="alpha parameter for alphashape"
+    )
+    parser.add_argument(
+        "--phenotyping_column",
+        type=str,
+        default="cellType",
+        help="what level of phenotyping, majorType or cellType",
+    )
+    parser.add_argument(
+        "--phenotype_to_cluster",
+        type=str,
+        default="all",
+        help="which cell types to cluster, all or specific cell type",
+    )
     args = parser.parse_args()
 
-
     # create configuration based on input args:
-    CONFIG = config(args)
+    CONFIG = Config(args)
 
     # pass CONFIG to main():
     main(CONFIG)
-
