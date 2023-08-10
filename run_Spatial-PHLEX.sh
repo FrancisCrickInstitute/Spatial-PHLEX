@@ -8,29 +8,29 @@
 #SBATCH --mail-type=end
 #SBATCH --mail-user=alastair.magness@crick.ac.uk
 
+#!/bin/bash
+
 ml purge
 ml Nextflow/22.04.0
 ml Singularity/3.6.4
 ml CUDA/11.4.1
 
-
-export NXF_SINGULARITY_CACHEDIR='/camp/project/proj-tracerx-lung/tctProjects/rubicon/inputs/containers/deep-imcyto'
-
+export NXF_SINGULARITY_CACHEDIR='./singularity'
 
 nextflow run ./main.nf \
-    --objects "/camp/lab/swantonc/working/Alastair/other_crick_imaging/megan_cole/data/dataset2_communityC_MRTX_Tregs_barrier_scoring_input_2.csv"\
-    --objects_delimiter ','\
-    --image_id_col "Image_ID"\
-    --x_id "Location_Center_X"\
-    --y_id "Location_Center_Y"\
-    --barrier_phenotyping_column "Cell_phenotype" \
+    --objects "/nemo/project/proj-tracerx-lung/tctProjects/rubicon/PHLEX/revision_testing/angelom_typex_mccs/cell_objects_revision_p1.txt"\
+    --objects_delimiter "\t" \
+    --image_id_col "imagename"\
+    --x_id "centerX"\
+    --y_id "centerY"\
+    --barrier_phenotyping_column "majorType" \
     --outdir "../results" \
-    --release 'MRTX_barrier' \
-    --workflow_name 'barrier_only' \
-    --barrier_source_cell_type "T cells CD8"\
-    --barrier_target_cell_type "Dendritic cells"\
-    --barrier_cell_type "T reg cells"\
+    --release 'PHLEX_example' \
+    --workflow_name 'clustered_barrier' \
+    --barrier_source_cell_type "CD8 T cells"\
+    --barrier_target_cell_type "Epithelial cells"\
+    --barrier_cell_type "aSMA+ cells"\
     --singularity_bind_path '/camp,/nemo'\
-    --n_neighbours 2\
-    -w '/camp/project/proj-tracerx-lung/txscratch/rubicon/Spatial-PHLEX/work'\
+    --n_neighbours 5\
+    -w "/camp/project/proj-tracerx-lung/txscratch/rubicon/deep_imcyto/work"\
     -resume

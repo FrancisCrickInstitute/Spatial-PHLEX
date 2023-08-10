@@ -47,8 +47,8 @@ process GRAPH_BARRIER {
     shell:
         '''
         stromal_barrier.py --graph_type !{params.graph_type} \
-            --source_cell_type '!{params.barrier_source_cell_type}'' \
-            --target_cell_type !'{params.barrier_target_cell_type}'' \
+            --source_cell_type '!{params.barrier_source_cell_type}' \
+            --target_cell_type '!{params.barrier_target_cell_type}' \
             --image_id_col !{params.image_id_col} \
             --x_id !{params.x_id} \
             --y_id !{params.y_id} \
