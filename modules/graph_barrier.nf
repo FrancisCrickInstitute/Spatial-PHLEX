@@ -50,8 +50,8 @@ process GRAPH_BARRIER {
             --source_cell_type '!{params.barrier_source_cell_type}' \
             --target_cell_type '!{params.barrier_target_cell_type}' \
             --image_id_col !{params.image_id_col} \
-            --x_id !{params.x_id} \
-            --y_id !{params.y_id} \
+            --y_id !{params.y_coord_col} \
+            --x_id !{params.x_coord_col} \
             --imagename !{imagename} \
             --neighbours !{params.n_neighbours} \
             --root_out . \

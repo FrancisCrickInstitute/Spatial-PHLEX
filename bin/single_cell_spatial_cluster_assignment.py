@@ -7,12 +7,14 @@ import numpy as np
 import pandas as pd
 from tqdm import *
 import skimage.io as io
+import json
 
 from spclust_util import (
     assemble_cluster_polygons,
     assign_to_spclust,
     do_clustering,
     get_image_shape_from_sampleFile,
+    get_shape_from_objects,
     plot_clusters,
     save_cluster_alphashapes,
     pipeline_make_label,
@@ -29,8 +31,11 @@ class Config:
         self.objects_sep = args.objects_sep
         self.sampleFile = args.sampleFile
         self.sampleFile_sep = args.sampleFile_sep
+        self.x_coord = args.x_coord
+        self.y_coord = args.y_coord
         self.alpha = 0.05  # Alphashape curvature parameter
         self.root_outdir = f"{args.root_outdir}/{args.phenotyping_column}/eps_{args.eps}_min_size_{args.min_s}_alpha_{args.alpha}"
+        self.palette = args.plot_palette
 
     def display(self):
         """Display Configuration values."""
@@ -65,22 +70,22 @@ def process_image(imagename, cType, image_df, imshape):
     out_dir = os.path.join(CONFIG.root_outdir, f"{cType}/{imagename}")
     os.makedirs(out_dir, exist_ok=True)
 
-    clustering_cells_df = image_df.loc[image_df[CONFIG.phenotyping_column] == cType]
+    clusters = image_df.loc[image_df[CONFIG.phenotyping_column] == cType]
 
-    if len(clustering_cells_df) > 0:
-        cluster_labels = do_clustering(clustering_cells_df, CONFIG.eps, CONFIG.min_s)
+    if len(clusters) > 0:
+        cluster_labels = do_clustering(clusters, CONFIG.eps, CONFIG.min_s)
 
-        clustering_cells_df["dbscan_cluster"] = cluster_labels
+        clusters["dbscan_cluster"] = cluster_labels
 
         spatial_cluster_polygons = assemble_cluster_polygons(
-            clustering_cells_df, cluster_labels, imagename, cType, alpha=CONFIG.alpha
+            clusters, cluster_labels, imagename, cType, alpha=CONFIG.alpha
         )
         alphashape_df = save_cluster_alphashapes(
             spatial_cluster_polygons, cType, imagename, out_dir
         )
 
         all_cells_list = list(
-            zip(image_df["centerX"].values, image_df["centerY"].values)
+            zip(image_df[CONFIG.x_coord].values, image_df[CONFIG.y_coord].values)
         )
         (
             spclust_assignments,
@@ -100,7 +105,7 @@ def process_image(imagename, cType, image_df, imshape):
         pipeline_make_label(alphashape_df, imshape, alphashape_spath)
 
     else:
-        clustering_cells_df["dbscan_cluster"] = []
+        clusters["dbscan_cluster"] = []
         cols_to_fill = [
             f"{cType}_{col}"
             for col in [
@@ -121,15 +126,38 @@ def process_image(imagename, cType, image_df, imshape):
     spath = os.path.join(out_dir, f"{imagename}_object_cluster_assignment.csv")
     image_df.to_csv(spath, sep=CONFIG.objects_sep)
 
-    plot_clusters(
-        clustering_cells_df,
-        clustering_cells_df["dbscan_cluster"].values,
-        imshape,
-        imagename,
-        cType,
-        out_dir,
-        alphashape_param=CONFIG.alpha,
-    )
+    # load palette:
+
+    if CONFIG.palette is not None:
+        # load the palette from the config filepath:
+        with open(CONFIG.palette, "r") as f:
+            plot_palette = json.load(f)
+
+        plot_clusters(image_df, 
+                    cluster_id_col = f'{cType}_spatial_cluster_id', 
+                    clustering_cell_type = cType, 
+                    x_col_id = CONFIG.x_coord,
+                    y_col_id = CONFIG.y_coord,
+                    phenotyping_column = CONFIG.phenotyping_column,
+                    bg_image = None, 
+                    image_shape = imshape, 
+                    sample_name = imagename,  
+                    outdir=out_dir, 
+                    alphashape_param = CONFIG.alpha,
+                    palette = plot_palette[CONFIG.phenotyping_column])
+    else:
+        plot_clusters(image_df, 
+                    cluster_id_col = f'{cType}_spatial_cluster_id', 
+                    clustering_cell_type = cType, 
+                    x_col_id = CONFIG.x_coord,
+                    y_col_id = CONFIG.y_coord,
+                    phenotyping_column = CONFIG.phenotyping_column,
+                    bg_image = None, 
+                    image_shape = imshape, 
+                    sample_name = imagename,  
+                    outdir=out_dir, 
+                    alphashape_param = CONFIG.alpha,
+                    palette = None)
 
     print(f"\n{imagename} done.")
 
@@ -146,6 +174,11 @@ def main(CONFIG):
     # define imagename to be processed:
     imagename = CONFIG.imagename
 
+    # read df:
+    cell_objects = pd.read_csv(
+        CONFIG.objects_filepath, sep=CONFIG.objects_sep, encoding="latin1"
+    )
+
     # read sampleFile
     if CONFIG.sampleFile != None:
         sampleFile = pd.read_csv(
@@ -153,12 +186,7 @@ def main(CONFIG):
         )
         imshape = get_image_shape_from_sampleFile(sampleFile, imagename)
     else:
-        imshape = (1000, 1000)
-
-    # read df:
-    cell_objects = pd.read_csv(
-        CONFIG.objects_filepath, sep=CONFIG.objects_sep, encoding="latin1"
-    )
+        imshape = get_shape_from_objects(cell_objects, x_coord=CONFIG.x_coord, y_coord=CONFIG.y_coord)
 
     if CONFIG.phenotype_to_cluster == "all":
         clustering_cell_types = cell_objects[
@@ -225,6 +253,9 @@ if __name__ == "__main__":
         default="all",
         help="which cell types to cluster, all or specific cell type",
     )
+    parser.add_argument("--x_coord", type=str, default='centerX', help="x coordinate")
+    parser.add_argument("--y_coord", type=str, default='centerY', help="y coordinate")
+    parser.add_argument("--plot_palette", type=str, default=None, help="path to json file containing palette for plotting")
     args = parser.parse_args()
 
     # create configuration based on input args:

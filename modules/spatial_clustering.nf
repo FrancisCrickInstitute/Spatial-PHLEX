@@ -37,6 +37,9 @@ process SPATIAL_CLUSTERING {
                 --objects_sep $'!{params.objects_delimiter}' \
                 --sampleFile_filepath !{params.sampleFile} \
                 --sampleFile_sep $'!{params.sampleFile_delimiter}' \
+                --x_coord !{params.x_coord_col} \
+                --y_coord !{params.y_coord_col} \
+                --plot_palette !{params.plot_palette} \
                 --root_outdir .
             '''
         else 
@@ -46,6 +49,9 @@ process SPATIAL_CLUSTERING {
                 --phenotype_to_cluster '!{params.phenotype_to_cluster}'\
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
+                --x_coord !{params.x_coord_col} \
+                --y_coord !{params.y_coord_col} \
+                --plot_palette !{params.plot_palette} \
                 --root_outdir .
             '''
 
