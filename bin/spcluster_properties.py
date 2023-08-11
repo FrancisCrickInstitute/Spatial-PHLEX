@@ -36,7 +36,7 @@ def plot(df, phenotyping_column, imagename, clustered_cellType, outdir):
     plt.suptitle(imagename)
     plt.tight_layout()
     
-    plt.savefig(os.path.join(outdir, f'{imagename}_{clustered_cellType}_{phenotyping_column}_intracluster_properties.png'))
+    plt.savefig(os.path.join(outdir, f'{imagename}_{clustered_cellType}_{phenotyping_column}_intracluster_properties.pdf'))
 
 
 def get_order(df, cat, val, ordering='median'):
@@ -51,6 +51,31 @@ def get_order(df, cat, val, ordering='median'):
         print(grouped.mean()[val].sort_values())
         order = grouped.mean()[val].sort_values().index.tolist() 
     return order
+
+def intracluster_density(clustered_data, delimiter, phenotyping_column, imagename, outdir, clustered_cellType):
+
+    phenotyping_column = phenotyping_column
+    imagename = imagename
+    outdir = outdir
+
+    # calculate intracluster cdensity of cells:
+    clustered = get_clustered(clustered_data, clustered_cellType)
+
+    if len(clustered) > 0:
+        grouped = clustered.groupby([f'{clustered_cellType}_spatial_cluster_id', f'{clustered_cellType}_cluster_area', phenotyping_column])
+        grouped = grouped.agg({'imagename': 'count'}).rename(columns={'imagename':'cells_per_cluster'}).reset_index()
+        grouped['intracluster_density'] = grouped['cells_per_cluster'] / grouped[f'{clustered_cellType}_cluster_area']
+
+        # calculate total cells per cluster andcell type fractions per cluster:
+        total_cells_per_cluster = grouped.groupby([f'{clustered_cellType}_spatial_cluster_id']).agg({'cells_per_cluster':'sum'}).rename(columns={'cells_per_cluster':'total_cells_per_cluster'}).reset_index()
+        grouped = pd.merge(grouped, total_cells_per_cluster, on=f'{clustered_cellType}_spatial_cluster_id')
+        grouped['intracluster_fraction'] = grouped['cells_per_cluster'] / grouped['total_cells_per_cluster']
+        grouped['imagename'] = imagename
+        grouped['clustered_cellType'] = clustered_cellType
+
+        # save output:
+        grouped.to_csv(os.path.join(outdir, f'{imagename}_{clustered_cellType}_{phenotyping_column}_intracluster_densities.csv'), sep=delimiter)
+        plot(grouped, phenotyping_column, imagename, clustered_cellType, outdir)
 
 
 def main(args):

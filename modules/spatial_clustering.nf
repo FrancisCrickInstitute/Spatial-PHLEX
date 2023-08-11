@@ -19,9 +19,11 @@ process SPATIAL_CLUSTERING {
 
     output:
         tuple val(imagename), path("**/*cluster_assignment.csv"), optional: true, emit: ch_all_spclusters
+        tuple val(imagename), path("**/*intracluster_densities.csv"), optional: true, emit: ch_intracluster_densities
         tuple val(imagename), path("**/${params.barrier_target_cell_type}/*/*cluster_assignment.csv"), emit: ch_target_spclusters, optional: true //MAKE CELL TYPE DERIVED IN NEXTFLOW TO ALLOW FOR RESULTS TO BE PASSED DOWNSTREAM
         path "**/*wkt.csv" optional true //, emit: ch_wkts
         path "**/*.png" optional true//, emit: ch_cluster_plots
+        path "**/*.pdf" optional true//, emit: ch_cluster_pdfs
         path "**/*.tiff" optional true//, emit: ch_alpha_labels
         val "$imagename"//, emit: ch_imagenames_post_spclust
 
@@ -40,6 +42,7 @@ process SPATIAL_CLUSTERING {
                 --x_coord !{params.x_coord_col} \
                 --y_coord !{params.y_coord_col} \
                 --plot_palette !{params.plot_palette} \
+                --image_id_col !{params.image_id_col} \
                 --root_outdir .
             '''
         else 
@@ -52,6 +55,7 @@ process SPATIAL_CLUSTERING {
                 --x_coord !{params.x_coord_col} \
                 --y_coord !{params.y_coord_col} \
                 --plot_palette !{params.plot_palette} \
+                --image_id_col !{params.image_id_col} \
                 --root_outdir .
             '''
 

@@ -33,7 +33,7 @@ nextflow run ./main.nf \
     --plot_palette "/nemo/project/proj-tracerx-lung/tctProjects/rubicon/PHLEX/revision_testing/magnesa/2023-08-10_spatial_phlex/Spatial-PHLEX/rubicon_palette_updated.json" \
     --n_neighbours 5\
     --outdir "../results" \
-    --release 'PHLEX_testing_new_plots' \
+    --release 'PHLEX_testing_new_plots_buffered_alphashape' \
     --singularity_bind_path '/camp,/nemo'\
     --number_of_inputs 1 \
     -w "/camp/project/proj-tracerx-lung/txscratch/rubicon/deep_imcyto/work"\

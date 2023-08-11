@@ -20,6 +20,8 @@ from spclust_util import (
     pipeline_make_label,
 )
 
+from spcluster_properties import intracluster_density
+
 class Config:
     def __init__(self, args):
         self.imagename = args.imagename
@@ -36,6 +38,7 @@ class Config:
         self.alpha = 0.05  # Alphashape curvature parameter
         self.root_outdir = f"{args.root_outdir}/{args.phenotyping_column}/eps_{args.eps}_min_size_{args.min_s}_alpha_{args.alpha}"
         self.palette = args.plot_palette
+        self.image_id_col = args.image_id_col
 
     def display(self):
         """Display Configuration values."""
@@ -78,10 +81,10 @@ def process_image(imagename, cType, image_df, imshape):
         clusters["dbscan_cluster"] = cluster_labels
 
         spatial_cluster_polygons = assemble_cluster_polygons(
-            clusters, cluster_labels, imagename, cType, alpha=CONFIG.alpha
+            clusters, cluster_labels, imagename, cType, x_col_id=CONFIG.x_coord, y_col_id=CONFIG.y_coord, alpha=CONFIG.alpha
         )
         alphashape_df = save_cluster_alphashapes(
-            spatial_cluster_polygons, cType, imagename, out_dir
+            spatial_cluster_polygons, cType, imagename, out_dir, CONFIG.phenotyping_column
         )
 
         all_cells_list = list(
@@ -100,9 +103,9 @@ def process_image(imagename, cType, image_df, imshape):
         image_df[f"distance_to_nearest_{cType}_cluster_boundary"] = distances
 
         alphashape_spath = os.path.join(
-            out_dir, f"{imagename}_{cType}_alphashape_polygons_label.tiff"
+            out_dir, f"{imagename}_{cType}_alphashape_polygons_label.png"
         )
-        pipeline_make_label(alphashape_df, imshape, alphashape_spath)
+
 
     else:
         clusters["dbscan_cluster"] = []
@@ -158,6 +161,8 @@ def process_image(imagename, cType, image_df, imshape):
                     outdir=out_dir, 
                     alphashape_param = CONFIG.alpha,
                     palette = None)
+        
+    intracluster_density(image_df, CONFIG.objects_sep, CONFIG.phenotyping_column,CONFIG.imagename, out_dir, cType)
 
     print(f"\n{imagename} done.")
 
@@ -184,7 +189,7 @@ def main(CONFIG):
         sampleFile = pd.read_csv(
             CONFIG.sampleFile, sep=CONFIG.sampleFile_sep, encoding="latin1"
         )
-        imshape = get_image_shape_from_sampleFile(sampleFile, imagename)
+        imshape = get_image_shape_from_sampleFile(sampleFile, imagename, image_id_col=CONFIG.image_id_col)
     else:
         imshape = get_shape_from_objects(cell_objects, x_coord=CONFIG.x_coord, y_coord=CONFIG.y_coord)
 
@@ -199,7 +204,7 @@ def main(CONFIG):
     if os.path.exists(CONFIG.root_outdir) != True:
         os.makedirs(CONFIG.root_outdir)
 
-    image_df = cell_objects.loc[cell_objects["imagename"] == imagename]
+    image_df = cell_objects.loc[cell_objects[CONFIG.image_id_col] == imagename]
 
     for cType in clustering_cell_types:
         process_image(imagename, cType, image_df, imshape)
@@ -255,6 +260,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--x_coord", type=str, default='centerX', help="x coordinate")
     parser.add_argument("--y_coord", type=str, default='centerY', help="y coordinate")
+    parser.add_argument("--image_id_col", type=str, default='imagename', help="image id column")
     parser.add_argument("--plot_palette", type=str, default=None, help="path to json file containing palette for plotting")
     args = parser.parse_args()
 
