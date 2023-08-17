@@ -2,7 +2,7 @@
 # Introduction
 Nextflow pipeline for multiplex imaging spatial data methods. 
 
-Spatial PHLEX is a constituent component of [TRACERx-PHLEX](), a modular pipeline for key data analysis tasks in multiplexed imaging. For a detailed guide to Spatial PHLEX's capabilities, please see the TRACERx PHLEX [paper]() or its [documentation](https://tracerx-phlex.readthedocs.io/en/main/spatialPHLEX.html).
+Spatial PHLEX is a constituent component of [TRACERx-PHLEX](https://github.com/FrancisCrickInstitute/TRACERx-PHLEX), a modular pipeline for key data analysis tasks in multiplexed imaging. For a detailed guide to Spatial PHLEX's capabilities, please see the TRACERx PHLEX [paper]() or its [documentation](https://tracerx-phlex.readthedocs.io/en/main/spatialPHLEX.html).
 
 
 # Requirements
