@@ -8,7 +8,6 @@
 ml purge
 ml Nextflow/22.04.0
 ml Singularity/3.6.4
-# ml CUDA/11.4.1
 
 export NXF_SINGULARITY_CACHEDIR='./singularity'
 
@@ -25,7 +24,7 @@ nextflow run ./main.nf \
     --barrier_source_cell_type "CD8 T cells"\
     --barrier_target_cell_type "Epithelial cells"\
     --barrier_cell_type "aSMA+ cells"\
-    --n_neighbours 5\
+    --n_neighbours 10\
     --outdir "../results" \
     --release 'PHLEX_testing_170823_config_update' \
     --singularity_bind_path '/camp,/nemo'\
