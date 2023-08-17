@@ -3,7 +3,6 @@
 ml purge
 ml Nextflow/22.04.0
 ml Singularity/3.6.4
-ml CUDA/11.4.1
 
 export NXF_SINGULARITY_CACHEDIR='./singularity'
 
@@ -23,4 +22,5 @@ nextflow run ./main.nf \
     --singularity_bind_path '/camp,/nemo'\
     --n_neighbours 5\
     -w './scratch'\
+    -profile {your_nf-core_profile}\
     -resume
