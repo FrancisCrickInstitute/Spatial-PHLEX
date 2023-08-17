@@ -30,9 +30,7 @@ process GRAPH_BARRIER {
     
     tag "${imagename}"
 
-    executor "slurm"
-    time "6h"
-    clusterOptions "--part=gpu --gres=gpu:1"
+    label 'Spatial_PHLEX_GPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
@@ -146,9 +144,10 @@ process AGGREGATE_SCORES {
     Aggregate the scores from the barrier scoring.
     */
         
-    executor "slurm"
-    time "6h"
-    clusterOptions "--part=gpu --gres=gpu:1"
+    // executor "slurm"
+    // time "6h"
+    // clusterOptions "--part=gpu --gres=gpu:1"
+    label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/aggregated_barrier_scoring", mode: params.publish_dir_mode, overwrite: params.overwrite
     

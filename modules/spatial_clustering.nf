@@ -4,10 +4,10 @@ process SPATIAL_CLUSTERING {
     */
 
     tag "${imagename}"
-    executor "slurm"
-	time "30m"
-	// clusterOptions "--part=cpu --mem=2GB"
-    clusterOptions "--part=gpu --gres=gpu:1"
+    // executor "slurm"
+	// time "30m"
+    // clusterOptions "--part=gpu --gres=gpu:1"
+    label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.overwrite
 
@@ -67,9 +67,10 @@ process INTRACLUSTER_DENSITY {
     Calculate intracluster densities of each cell type.
     */
         
-    executor "slurm"
-    time "1h"
-    clusterOptions "--part=cpu --mem=4GB"
+    // executor "slurm"
+    // time "1h"
+    // clusterOptions "--part=cpu --mem=4GB"
+    label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering/intracluster_density/${params.phenotyping_column}/${imagename}/${cellType}", mode: params.publish_dir_mode, overwrite: params.overwrite
     

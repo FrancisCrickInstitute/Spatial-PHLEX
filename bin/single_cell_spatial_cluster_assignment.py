@@ -131,7 +131,21 @@ def process_image(imagename, cType, image_df, imshape):
 
     # load palette:
 
-    if CONFIG.palette is not None:
+    if CONFIG.palette == 'default':
+        plot_clusters(image_df, 
+                    cluster_id_col = f'{cType}_spatial_cluster_id', 
+                    clustering_cell_type = cType, 
+                    x_col_id = CONFIG.x_coord,
+                    y_col_id = CONFIG.y_coord,
+                    phenotyping_column = CONFIG.phenotyping_column,
+                    bg_image = None, 
+                    image_shape = imshape, 
+                    sample_name = imagename,  
+                    outdir=out_dir, 
+                    alphashape_param = CONFIG.alpha,
+                    palette = None)
+        
+    else:
         # load the palette from the config filepath:
         with open(CONFIG.palette, "r") as f:
             plot_palette = json.load(f)
@@ -148,19 +162,6 @@ def process_image(imagename, cType, image_df, imshape):
                     outdir=out_dir, 
                     alphashape_param = CONFIG.alpha,
                     palette = plot_palette[CONFIG.phenotyping_column])
-    else:
-        plot_clusters(image_df, 
-                    cluster_id_col = f'{cType}_spatial_cluster_id', 
-                    clustering_cell_type = cType, 
-                    x_col_id = CONFIG.x_coord,
-                    y_col_id = CONFIG.y_coord,
-                    phenotyping_column = CONFIG.phenotyping_column,
-                    bg_image = None, 
-                    image_shape = imshape, 
-                    sample_name = imagename,  
-                    outdir=out_dir, 
-                    alphashape_param = CONFIG.alpha,
-                    palette = None)
         
     intracluster_density(image_df, CONFIG.objects_sep, CONFIG.phenotyping_column,CONFIG.imagename, out_dir, cType)
 

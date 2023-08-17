@@ -26,10 +26,8 @@ workflow SPATIAL_CLUSTERING_WF {
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_column)
         all_spclusters = group_channel(SPATIAL_CLUSTERING.out.ch_all_spclusters)
-        all_spclusters.view()
 
         all_spclusters.collectFile( name:"$workDir/collected_spclusters.csv", keepHeader: true, skip:1 ).set {all_spclusts}
-        all_spclusts.view()
 
         // INTRACLUSTER_DENSITY(all_spclusters)
 
@@ -59,15 +57,11 @@ workflow CLUSTERED_BARRIER_WF {
 
         // Perform spatial clustering:
         SPATIAL_CLUSTERING(cell_objects, imagenames, phenotyping_column)
-        
-        SPATIAL_CLUSTERING.out.ch_target_spclusters.view()
     
         // Pass epithelial spatial clusters to the barrier module:
         GRAPH_BARRIER(SPATIAL_CLUSTERING.out.ch_target_spclusters)
 
         GRAPH_BARRIER.out.ch_barrier_results.collectFile( name:"$workDir/${params.barrier_source_cell_type}_to_${params.barrier_target_cell_type}_barrier_scores.csv", keepHeader: true, skip:1 ).set {barriers}
-
-        barriers.view()
 
         AGGREGATE_SCORES(barriers)
 
