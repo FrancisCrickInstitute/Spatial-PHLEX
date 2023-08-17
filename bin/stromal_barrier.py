@@ -193,8 +193,8 @@ def main(args):
                 all_cellchains = []
                 all_vertexes = []
                 all_chain_lengths = []
-                all_degenerate_counts = []
-                all_degenerate_adjacent = []
+                all_allpaths_counts = []
+                all_allpaths_adjacent = []
                 all_vertex_chains = []
 
                 ## node ids of the target cell type:
@@ -245,8 +245,8 @@ def main(args):
                                 print("THIS IS THE CLOSEST EPI i.e. target DATAFRAME:")
                                 print(closest_epi)
 
-                                degenerate_barrier_fraction = (
-                                    sb.degenerate_path_content(
+                                allpaths_barrier_fraction = (
+                                    sb.allpaths_path_content(
                                         closest_epi,
                                         shortest_paths,
                                         minpath_to_target,
@@ -254,8 +254,8 @@ def main(args):
                                         phenotyping_column=phenotyping_column,
                                     )
                                 )
-                                degenerate_adjacent_count = (
-                                    sb.degenerate_adjacent_barrier(
+                                allpaths_adjacent_count = (
+                                    sb.allpaths_adjacent_barrier(
                                         closest_epi,
                                         shortest_paths,
                                         minpath_to_target,
@@ -264,11 +264,11 @@ def main(args):
                                     )
                                 )
 
-                                all_degenerate_counts.append(
-                                    degenerate_barrier_fraction
+                                all_allpaths_counts.append(
+                                    allpaths_barrier_fraction
                                 )
-                                all_degenerate_adjacent.append(
-                                    degenerate_adjacent_count
+                                all_allpaths_adjacent.append(
+                                    allpaths_adjacent_count
                                 )
 
                                 if CALC_CHAIN == True:
@@ -298,15 +298,15 @@ def main(args):
                             zip(
                                 all_chain_lengths,
                                 barrier_content,
-                                all_degenerate_counts,
-                                all_degenerate_adjacent,
+                                all_allpaths_counts,
+                                all_allpaths_adjacent,
                             )
                         ),
                         columns=[
                             "chainlength",
                             "barrier_content",
-                            "degenerate_barrier_fraction",
-                            "degenerate_adjacent_fraction",
+                            "allpaths_barrier_fraction",
+                            "allpaths_adjacent_fraction",
                         ],
                     )
                     barrier_df["cell_chain"] = all_cellchains

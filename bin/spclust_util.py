@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
-from cProfile import label
-import glob
-import multiprocessing as mp
 import os
 import re
-import sys
 
 import alphashape
 import matplotlib.pyplot as plt
@@ -20,12 +16,13 @@ from skimage.transform import rotate
 from sklearn import metrics
 from sklearn.cluster import DBSCAN, KMeans
 from tqdm import *
+import seaborn as sns
 
 ########################
 # FUNCTION DEFINITIONS #
 ########################
 
-def do_clustering(cell_type_df, eps_param, min_samples=1):
+def do_clustering(cell_type_df, eps_param, min_samples=1, x_col_id='centerX', y_col_id='centerY'):
     """
     Performs DBSCAN clustering given a cell typing dataframe and returns list of labels of clusters that each cell belongs to.
     """
@@ -39,7 +36,7 @@ def do_clustering(cell_type_df, eps_param, min_samples=1):
     # create list of X,Y positions in [[X0,Y0], [X1,Y1]...[Xi,Yi]] format for clustering:
     cell_positions = []
     for i in range(n_cells):
-        cell_positions.append([cell_type_df['centerX'][i], cell_type_df['centerY'][i]])
+        cell_positions.append([cell_type_df[x_col_id][i], cell_type_df[y_col_id][i]])
 
     # perform DBSCAN clustering:
     clustering = DBSCAN(eps=eps_param, min_samples=min_samples).fit(cell_positions)
@@ -47,58 +44,58 @@ def do_clustering(cell_type_df, eps_param, min_samples=1):
     return labels
 
 
-def plot_clusters(clustered_df, cluster_labels, image_shape, sample_name, clustering_cell_type, outdir, alphashape_param = 0.05):
-    """
-    Plots spatial clusters of cells with an alphashape pertaining to each spatial cluster. 
-    Counts all other cell types which lie within alphashape and outputs dataframe.
-    """
-    if os.path.exists(outdir) != True:
-        os.makedirs(outdir)
+def plot_clusters(clusters, cluster_id_col='Epithelial cells_spatial_cluster_id', clustering_cell_type=None,
+                  x_col_id='centerX', y_col_id='centerY', phenotyping_column='phenotype', bg_image=None,
+                  image_shape=(1000, 1000), sample_name=None, outdir=None, alphashape_param=0.05, palette=None, cell_radius=5):
 
-    # create figure:    
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize = (15,15))
+    sns.set_style("white")
+    fig, ax = plt.subplots(figsize=(15, 15))
 
-    # get unique cluster labels:
-    unique_cluster_labels = np.unique(cluster_labels)
+    if bg_image is not None:
+        ax.imshow(bg_image)
 
-    # loop through labels:
+    if palette:
+        sns.scatterplot(data=clusters, x=x_col_id, y=y_col_id, hue=phenotyping_column, palette=palette, ax=ax, s=25, alpha=0.5)
+    else:
+        sns.scatterplot(data=clusters, x=x_col_id, y=y_col_id, hue=phenotyping_column, ax=ax, s=25, alpha=0.5)
+
+    unique_cluster_labels = clusters[cluster_id_col].unique()
+
     for label in unique_cluster_labels:
+        if label >= 0:
+            single_cluster_df = clusters[clusters[cluster_id_col] == label]
+            points = list(zip(single_cluster_df[x_col_id], single_cluster_df[y_col_id]))
 
-        # get df for each unique label:
-        cluster_df = clustered_df[clustered_df['dbscan_cluster'] == label]
+            if len(points) > 0:
+                alpha_shape = alphashape.alphashape(points, alphashape_param)
+                buffered = alpha_shape.buffer(cell_radius)
+                if alpha_shape.geom_type in ['Polygon', 'MultiPolygon']:
+                    ax.add_patch(PolygonPatch(alpha_shape, fc='w', ec='k', alpha=0.75, lw=2, fill=False))
+                    ax.add_patch(PolygonPatch(buffered, fc='w', ec='k', alpha=0.75, lw=0.5, fill=False))
+                    ax.scatter(single_cluster_df[x_col_id], single_cluster_df[y_col_id], alpha=0.5, color='k', s=1)
+                else:
+                    ax.scatter(single_cluster_df[x_col_id], single_cluster_df[y_col_id], alpha=0.5, s=1)
 
-        # get points of cluster:
-        X = cluster_df['centerX'].values
-        Y = cluster_df['centerY'].values       
-        points = list(zip(X, Y))
-
-        # only proceed if cells exist:
-        if len(X) > 0:
-
-            # create alphashape:
-            alpha_shape = alphashape.alphashape(points, alphashape_param)
-            
-            if alpha_shape.geom_type in ['Polygon', 'MultiPolygon']: # only process Polygon and Multipolygons i.e. ignore lines of cells which cannot contain other cells
-              
-                # plot points and add patch of alphashape:
-                ax.scatter(cluster_df['centerX'].values, cluster_df['centerY'].values, alpha=0.5)
-                ax.add_patch(PolygonPatch(alpha_shape, alpha=0.2))
-
-            else:
-                ax.scatter(cluster_df['centerX'].values, cluster_df['centerY'].values, alpha=0.5)
-
-    # update plot with title etc and save:
-    title = '{}_{}_alpha_{}.png'.format(sample_name, clustering_cell_type, alphashape_param)
-    ax.set_title(title, fontsize=18)
     ax.set_xlabel('Centroid X µm')
     ax.set_ylabel('Centroid Y µm')
-    ax.set_ylim(0,image_shape[0])
-    ax.set_xlim(0,image_shape[1])
+    ax.set_ylim(0, image_shape[0])
+    ax.set_xlim(0, image_shape[1])
+    ax.spines[['right', 'top']].set_visible(False)
     plt.gca().invert_yaxis()
-    plt.savefig('{}/{}_{}_alpha_{}.png'.format(outdir,sample_name, clustering_cell_type, alphashape_param))
-    plt.close()
+    plt.tight_layout()
 
-def assemble_cluster_polygons(clustered_df, cluster_labels, sample_name, clustering_cell_type, alpha = 0.05):
+    if outdir is not None:
+        os.makedirs(outdir, exist_ok=True)
+        if sample_name and clustering_cell_type:
+            title = f'{sample_name}_{clustering_cell_type}_alpha_{alphashape_param}.png'.replace(' ', '_')
+            plt.savefig(os.path.join(outdir, title))
+
+    plt.show()
+    plt.close(fig)
+    return fig
+
+def assemble_cluster_polygons(clustered_df, cluster_labels, sample_name, clustering_cell_type,
+                                x_col_id='centerX', y_col_id='centerY',alpha = 0.05):
     """
     Generate alphashape polygons for all cells with cluster labels for a give image and clustering cell type.
     Returns a list of polygons.
@@ -126,8 +123,8 @@ def assemble_cluster_polygons(clustered_df, cluster_labels, sample_name, cluster
         # print('\ncluster_id: ', cluster_id)
 
         # get (x,y) values for cells with label
-        X = cluster_df['centerX'].values
-        Y = cluster_df['centerY'].values
+        X = cluster_df[x_col_id].values
+        Y = cluster_df[y_col_id].values
 
         # get points of cluster:
         points = list(zip(X, Y))
@@ -210,11 +207,16 @@ def get_image_shape(imagepath):
     shape = im.shape
     return shape
 
-def get_image_shape_from_sampleFile(sampleFile, imagename, default_shape = (1000,1000)):
+def get_shape_from_objects(objects, x_coord="centerX", y_coord="centerY"):
+    """Get shape of image from maximum x and y coordinates in objects file.
+    Return as tuple (rows, columns).)"""
+    return (int(objects[y_coord].max()), int(objects[x_coord].max()))
+
+def get_image_shape_from_sampleFile(sampleFile, imagename, default_shape = (1000,1000), image_id_col='imagename'):
     sampleFile_cols = list(sampleFile)
     if ('image_width' in sampleFile_cols) & ('image_height' in sampleFile_cols):
-        width = int(sampleFile[sampleFile['imagename'] == imagename]['image_width'].item())
-        height = int(sampleFile[sampleFile['imagename'] == imagename]['image_height'].item())
+        width = int(sampleFile[sampleFile[image_id_col] == imagename]['image_width'].item())
+        height = int(sampleFile[sampleFile[image_id_col] == imagename]['image_height'].item())
         shape = (height, width)
         return shape
     else:
@@ -276,7 +278,7 @@ def assign_to_spclust(cell_list, spatial_cluster_polygons):
 
     return alphashape_assignments, cluster_areas, nearest_cluster, distances_to_cluster_boundary
 
-def save_cluster_alphashapes(alphashapes, cellType, imagename, out_dir):
+def save_cluster_alphashapes(alphashapes, cellType, imagename, out_dir, phenotyping_column='phenotype'):
     """
     Save the alphashapes of the spatial clusters to csv in well-known text format.
     """
@@ -285,7 +287,7 @@ def save_cluster_alphashapes(alphashapes, cellType, imagename, out_dir):
     d = {'cluster_id': cluster_ids,
             'well-known_txt': wkts}
     df = pd.DataFrame(d)
-    df['cellType'] = cellType
+    df[phenotyping_column] = cellType
     df['image'] = imagename
     print(df)
     spath = os.path.join(out_dir, '{}_{}_alphashape_polygons_wkt.csv'.format(imagename, cellType))
@@ -396,5 +398,5 @@ def pipeline_make_label(wkts, shape, path):
 
     binary = label_image > 0
     binary = img_as_ubyte(binary)
-    io.imsave(path.replace('_alphashape_polygons_label.tiff', '_alphashape_polygons_binary.png'), binary)
+    io.imsave(path.replace('label.png', 'binary.png'), binary)
 

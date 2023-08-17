@@ -30,9 +30,7 @@ process GRAPH_BARRIER {
     
     tag "${imagename}"
 
-    executor "slurm"
-    time "6h"
-    clusterOptions "--part=gpu --gres=gpu:1"
+    label 'Spatial_PHLEX_GPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/clustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
 
@@ -47,11 +45,11 @@ process GRAPH_BARRIER {
     shell:
         '''
         stromal_barrier.py --graph_type !{params.graph_type} \
-            --source_cell_type '!{params.barrier_source_cell_type}'' \
-            --target_cell_type !'{params.barrier_target_cell_type}'' \
+            --source_cell_type '!{params.barrier_source_cell_type}' \
+            --target_cell_type '!{params.barrier_target_cell_type}' \
             --image_id_col !{params.image_id_col} \
-            --x_id !{params.x_id} \
-            --y_id !{params.y_id} \
+            --y_id !{params.y_coord_col} \
+            --x_id !{params.x_coord_col} \
             --imagename !{imagename} \
             --neighbours !{params.n_neighbours} \
             --root_out . \
@@ -146,9 +144,10 @@ process AGGREGATE_SCORES {
     Aggregate the scores from the barrier scoring.
     */
         
-    executor "slurm"
-    time "6h"
-    clusterOptions "--part=gpu --gres=gpu:1"
+    // executor "slurm"
+    // time "6h"
+    // clusterOptions "--part=gpu --gres=gpu:1"
+    label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/aggregated_barrier_scoring", mode: params.publish_dir_mode, overwrite: params.overwrite
     

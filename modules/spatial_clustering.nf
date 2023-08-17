@@ -4,10 +4,10 @@ process SPATIAL_CLUSTERING {
     */
 
     tag "${imagename}"
-    executor "slurm"
-	time "30m"
-	// clusterOptions "--part=cpu --mem=2GB"
-    clusterOptions "--part=gpu --gres=gpu:1"
+    // executor "slurm"
+	// time "30m"
+    // clusterOptions "--part=gpu --gres=gpu:1"
+    label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.overwrite
 
@@ -19,9 +19,11 @@ process SPATIAL_CLUSTERING {
 
     output:
         tuple val(imagename), path("**/*cluster_assignment.csv"), optional: true, emit: ch_all_spclusters
+        tuple val(imagename), path("**/*intracluster_densities.csv"), optional: true, emit: ch_intracluster_densities
         tuple val(imagename), path("**/${params.barrier_target_cell_type}/*/*cluster_assignment.csv"), emit: ch_target_spclusters, optional: true //MAKE CELL TYPE DERIVED IN NEXTFLOW TO ALLOW FOR RESULTS TO BE PASSED DOWNSTREAM
         path "**/*wkt.csv" optional true //, emit: ch_wkts
         path "**/*.png" optional true//, emit: ch_cluster_plots
+        path "**/*.pdf" optional true//, emit: ch_cluster_pdfs
         path "**/*.tiff" optional true//, emit: ch_alpha_labels
         val "$imagename"//, emit: ch_imagenames_post_spclust
 
@@ -31,19 +33,29 @@ process SPATIAL_CLUSTERING {
         if (params.sampleFile)
             '''
             single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
-                --phenotyping_column !{level} \
+                --phenotyping_column '!{level}' \
+                --phenotype_to_cluster '!{params.phenotype_to_cluster}'\
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
                 --sampleFile_filepath !{params.sampleFile} \
                 --sampleFile_sep $'!{params.sampleFile_delimiter}' \
+                --x_coord !{params.x_coord_col} \
+                --y_coord !{params.y_coord_col} \
+                --plot_palette !{params.plot_palette} \
+                --image_id_col !{params.image_id_col} \
                 --root_outdir .
             '''
         else 
             '''
             single_cell_spatial_cluster_assignment.py --imagename !{imagename} \
-                --phenotyping_column !{level} \
+                --phenotyping_column '!{level}' \
+                --phenotype_to_cluster '!{params.phenotype_to_cluster}'\
                 --objects_filepath !{objects} \
                 --objects_sep $'!{params.objects_delimiter}' \
+                --x_coord !{params.x_coord_col} \
+                --y_coord !{params.y_coord_col} \
+                --plot_palette !{params.plot_palette} \
+                --image_id_col !{params.image_id_col} \
                 --root_outdir .
             '''
 
@@ -55,9 +67,10 @@ process INTRACLUSTER_DENSITY {
     Calculate intracluster densities of each cell type.
     */
         
-    executor "slurm"
-    time "1h"
-    clusterOptions "--part=cpu --mem=4GB"
+    // executor "slurm"
+    // time "1h"
+    // clusterOptions "--part=cpu --mem=4GB"
+    label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering/intracluster_density/${params.phenotyping_column}/${imagename}/${cellType}", mode: params.publish_dir_mode, overwrite: params.overwrite
     

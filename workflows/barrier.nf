@@ -28,7 +28,6 @@ workflow NEIGHBOURHOOD_WF {
         NEIGHBOURHOOD_GRAPH(nhood_file, nhood_module_no)
 
         adjacency_mapped = NEIGHBOURHOOD_GRAPH.out.adj_output_ch.map { generate_imagenames(it) }
-        adjacency_mapped.view()
 
         NEIGHBOURHOOD_BARRIER(adjacency_mapped, cell_objects)
 
