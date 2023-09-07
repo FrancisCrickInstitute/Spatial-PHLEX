@@ -26,9 +26,9 @@ nextflow run ./main.nf \
     --barrier_cell_type "aSMA+ cells"\
     --n_neighbours 10\
     --outdir "../results" \
-    --release 'PHLEX_testing_170823_config_update' \
+    --release 'PHLEX_testing' \
     --singularity_bind_path '/camp,/nemo'\
     --plot_palette "$PWD/assets/PHLEX_test_palette.json" \
     -w "/camp/project/proj-tracerx-lung/txscratch/rubicon/deep_imcyto/work"\
     -profile crick \
-    # -resume
+    -resume
