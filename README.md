@@ -75,3 +75,9 @@ nextflow run ./main.nf \
 ```
 
 Replace {your_nf-core_profile} with the profile for your organisation, e.g. `crick`. For more information on nf-core profiles, see the [list of available nf-core configs](https://github.com/nf-core/configs) plus other advice on pipeline configuration [here](https://nf-co.re/usage/configuration#profiles).
+
+# Outputs
+
+
+# Credits
+Spatial PHLEX is primarily developed by [Alastair Magness](mailto:alastair.magness@crick.ac.uk) at [The Francis Crick Institute](https://www.crick.ac.uk). Other core contributors include [Emma Colliver](mailto:emma.colliver@crick.ac.uk), [Mihaela Angelova](mailto:mihaela.angelova@crick.ac.uk), and [Katey Enfield](katey.enfield@crick.ac.uk).
