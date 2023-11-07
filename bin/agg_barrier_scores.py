@@ -11,10 +11,10 @@ def main(args):
     scores = pd.read_csv(args.barrier_scores, sep=args.delimiter, encoding='utf-8')
 
     #define metrics for aggregation:
-    metrics = ['weighted_barrier_content','binary_barrier','adjacent_barrier','barrier_content','barrier_fraction','allpaths_barrier_fraction', 'allpaths_adjacent_fraction']
+    metrics = ['all_paths_barrier_fraction', 'all_paths_adjacent_fraction']
 
     # group dataframe by image and source cell used in barrier calculation:
-    grouped = scores.groupby(['imagename', 'source_cell'])
+    grouped = scores.groupby([args.image_id_col, 'source_cell'])
     
     # define aggregation functions for summary table:
     agg_funcs = [np.mean, np.median, np.std]
@@ -39,6 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--barrier_scores', help='Path to aggregate barrier scores for all images', required=True)
     parser.add_argument('--delimiter', help='Delimiter for barrier scores', default='\t')
     parser.add_argument('--outdir', help='Output directory', required=True, default='.')
+    parser.add_argument('--image_id_col', help='Column name for image id', default='imagename')
 
     args = parser.parse_args()
     main(args)

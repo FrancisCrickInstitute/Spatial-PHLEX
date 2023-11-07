@@ -13,7 +13,7 @@ export NXF_SINGULARITY_CACHEDIR='./singularity'
 
 nextflow run ./main.nf \
     --workflow_name 'clustered_barrier' \
-    --objects "$PWD/data/cell_objects_revision_p1.txt"\
+    --objects "$PWD/data/PHLEX_test_cell_objects.txt"\
     --objects_delimiter "\t" \
     --image_id_col "imagename"\
     --phenotyping_column 'majorType'\
@@ -29,6 +29,8 @@ nextflow run ./main.nf \
     --release 'PHLEX_testing' \
     --singularity_bind_path '/camp,/nemo'\
     --plot_palette "$PWD/assets/PHLEX_test_palette.json" \
+    --dev true\
+    --number_of_inputs 1\
     -w "/camp/project/proj-tracerx-lung/txscratch/rubicon/deep_imcyto/work"\
     -profile crick \
     -resume

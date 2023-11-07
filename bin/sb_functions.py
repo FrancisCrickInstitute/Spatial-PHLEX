@@ -26,6 +26,35 @@ def make_legible(string):
 def df_select(df, cat, val):
     return df[df[cat] == val]
 
+def preprocess_clustered_barrier(objects, 
+                            phenotyping_column, 
+                            target_cell_type, 
+                            cluster_size_cutoff = 2000, 
+                            remove_target_cells_in_domain = False,
+                            domain_to_restrict = "Distal Stroma"):
+
+    # Alter unclustered
+    objects.loc[
+        (objects[f"{target_cell_type}_spatial_cluster_id"] == -1)
+        & (objects[phenotyping_column] == f"{target_cell_type}"),
+        phenotyping_column,
+    ] = f"Unclustered {target_cell_type}"
+    # alter those in small clusters:
+    objects.loc[
+        (objects[f"{target_cell_type}_cluster_area"] < cluster_size_cutoff)
+        & (objects[phenotyping_column] == f"{target_cell_type}"),
+        phenotyping_column,
+    ] = f"Unclustered {target_cell_type}"
+
+    if remove_target_cells_in_domain:
+        objects.loc[
+            (objects["domain"] == domain_to_restrict)
+            & (objects[phenotyping_column] == f"{target_cell_type}"),
+            phenotyping_column,
+        ] = "Unassigned"
+
+    return objects
+
 
 def compute_cohort_centralities(
     objects,
@@ -59,7 +88,7 @@ def compute_cohort_centralities(
                 obsm={"spatial": coords},
                 obs={f"{phenotyping_column}": cellTypes},
             )
-            print(adata)
+            # print(adata)
 
             ## derive spatial neighbours graph:
             sq.gr.spatial_neighbors(adata, radius=radius)
@@ -80,17 +109,34 @@ def compute_cohort_centralities(
 
     return cohort_centralities
 
-
-def compute_spatial_graph(
+def make_cell_graph(
     objects,
     imagename,
-    markers,
     x_id="centerX",
     y_id="centerY",
     phenotyping_column="cellType",
+    graph_type="spatial_neighbours",
     radius=35,
-    rand_features=True,
+    n_neighs=6,
 ):
+    """Create a spatial graph from a dataframe of cell objects with squidpy. Uses random features to create the anndata object.
+
+    Args:
+        objects (pd.Dataframe): Cell objects dataframe.
+        imagename (str): ID of the image to be processed in the objects dataframe.
+        x_id (str, optional): column header of x coordinate. Defaults to "centerX".
+        y_id (str, optional): column header og y coordinate. Defaults to "centerY".
+        phenotyping_column (str, optional): column header of cell phenotype information. Defaults to "cellType".
+        graph_type (str, optional): Method of graph construction to use. Defaults to "spatial_neighbours".
+        radius (int, optional): Radius cutoff for spatial neighbours graph construction. Defaults to 35.
+        n_neighs (int, optional): Number of nearest neighbours for nearest_neighbours graph construction. Defaults to 6.
+
+    Raises:
+        ValueError: Unrecognised graph construction methods.
+
+    Returns:
+        Anndata: Anndata object with cell spatial graph produced by graph_type method as attribute.
+    """    
     # annotate adata with phenotyping info
     image_objects = objects[objects["imagename"] == imagename].astype("category")
     image_cTypes = image_objects[phenotyping_column].dropna().unique()
@@ -98,12 +144,9 @@ def compute_spatial_graph(
     if (
         len(image_cTypes) > 0
     ):  # only proceed if there are cells of the specified phenotype level in the image
-        if rand_features == True:
-            # create dummy features so we can use this method of graph construction
-            features = np.random.rand(len(image_objects), len(markers))
-        else:
-            features = image_objects[markers].values
 
+        # create dummy features so we can use this method of graph construction
+        features = np.random.rand(len(image_objects), 3)
         cellTypes = image_objects[phenotyping_column].values
 
         coords = np.asarray(
@@ -114,76 +157,41 @@ def compute_spatial_graph(
         adata = AnnData(
             features, obsm={"spatial": coords}, obs={f"{phenotyping_column}": cellTypes}
         )
-        print(adata)
 
         ## derive spatial neighbours graph:
-        sq.gr.spatial_neighbors(adata, radius=radius, coord_type="generic")
-
-    return adata
-
-
-def compute_nn_graph(
-    objects,
-    imagename,
-    markers,
-    x_id="centerX",
-    y_id="centerY",
-    phenotyping_column="cellType",
-    image_id_col="imagename",
-    n_neighs=6,
-    rand_features=True,
-):
-    # annotate adata with phenotyping info
-    image_objects = objects[objects[image_id_col] == imagename].astype("category")
-    image_cTypes = image_objects[phenotyping_column].dropna().unique()
-
-    if (
-        len(image_cTypes) > 0
-    ):  # only proceed if there are cells of the specified phenotype level in the image
-        if rand_features == True:
-            # create dummy features so we can use this method of graph construction
-            features = np.random.rand(len(image_objects), len(markers))
+        if graph_type == "spatial_neighbours":
+            ## derive spatial neighbours graph:
+            sq.gr.spatial_neighbors(adata, radius=radius, coord_type="generic")
+        elif graph_type == 'nearest_neighbour':
+            ## derive nearest neighbours graph:
+            sq.gr.spatial_neighbors(adata, n_neighs=n_neighs)
         else:
-            features = image_objects[markers].values
+            raise ValueError("graph_type not recognised.")
 
-        cellTypes = image_objects[phenotyping_column].values
-        coords = np.asarray(
-            list(zip(image_objects[x_id].values, image_objects[y_id].values))
-        )
-
-        # create anndata object:
-        adata = AnnData(
-            features, obsm={"spatial": coords}, obs={f"{phenotyping_column}": cellTypes}
-        )
-        print(adata)
-
-        ## derive spatial neighbours graph:
-        sq.gr.spatial_neighbors(adata, n_neighs=n_neighs)
-
-    return adata
+        G = nx.convert_matrix.from_scipy_sparse_matrix(
+                adata.obsp["spatial_connectivities"]
+            )
+        node_ids = get_graph_node_ids(adata, phenotyping_column)
+        
+    return G, node_ids
 
 
 def compute_shortest_paths(G, node_ids, source=0):
-    sps = cg.traversal.sssp(G, source=source)
+    '''
+    Compute shortest with breadth first search from source node to all other nodes in the graph.
+    Args:
+    G = networkx graph
+
+    '''
+    sps = cg.traversal.bfs(G, start=source)
     sps = merge_node_ids_to_shortest_paths(sps, node_ids)
     return sps
 
 
 def merge_node_ids_to_shortest_paths(shortest_paths, node_ids):
     # node_ids = pandas dataframe with nodeid in integer format as column called 'vertex'
-    node_ids["vertex"] = np.arange(
-        0, len(node_ids.index)
-    )  ## changed from node_ids['vertex'] = 27/03/22
     shortest = pd.merge(shortest_paths, node_ids, how="left", on="vertex")
     return shortest
-
-
-def min_path_to_epithelial(shortest_paths, phenotyping_column="cellType"):
-    min_path = shortest_paths[shortest_paths[phenotyping_column] == "Epithelial cells"][
-        "distance"
-    ].min()
-    return int(min_path)
-
 
 def min_path_to_cellType(shortest_paths, phenotyping_column, cType):
     min_path = shortest_paths[shortest_paths[phenotyping_column] == cType][
@@ -193,7 +201,7 @@ def min_path_to_cellType(shortest_paths, phenotyping_column, cType):
 
 
 def get_predecessor(df, minpath_to_target, phenotyping_column, target_cellType):
-    print(df)
+    # print(df)
     predecessor = df[
         (df["distance"] == minpath_to_target)
         & (df[phenotyping_column] == target_cellType)
@@ -221,13 +229,13 @@ def followchain(
 
     Todo: return vertex ids for subsequent referencing of e.g. positive marker expression
     """
-    print("SHORTEST PATHS: \n", shortest_paths)
+    # print("SHORTEST PATHS: \n", shortest_paths)
     sorted_shortest_paths = shortest_paths.sort_values(by="distance")
     sorted_shortest_paths = sorted_shortest_paths[
         (sorted_shortest_paths["distance"] == minpath_to_target)
         & (sorted_shortest_paths[phenotyping_column] == target_cell)
     ]
-    print("SORTED SHORTEST PATHS\n", sorted_shortest_paths)
+    # print("SORTED SHORTEST PATHS\n", sorted_shortest_paths)
     target_vertex = sorted_shortest_paths["vertex"].iloc[0]
 
     # print(minpath_to_target)
@@ -277,17 +285,6 @@ def relabel_vertex_chain(vertex_chain, relabel_dict):
     return relabelled_chain
 
 
-def recursive_predecessor(df, predecessor):
-    """This is a recursive function
-    to find the factorial of an integer"""
-    predecessor = df[(df["vertex"] == predecessor)].iloc[0]["predecessor"].item()
-    # print(predecessor)
-    if predecessor == -1:
-        return 1
-    else:
-        return recursive_predecessor(df, df[df["predecessor"] == predecessor])
-
-
 def get_predecessor_nodeType(df, predecessor, phenotyping_column="cellType"):
     nodetype = df[df["vertex"] == predecessor].iloc[0][phenotyping_column]
     return nodetype
@@ -300,39 +297,6 @@ def get_graph_node_ids(spg, phenotyping_column):
 
     node_ids = pd.DataFrame(spg.obs[[phenotyping_column]])
     node_ids["vertex"] = np.arange(0, len(node_ids.index))
-    print("THIS IS THE NODE IDS DATAFRAME:")
-    print(node_ids)
-    return node_ids
-
-
-def get_node_ids_2(objects, imagename, attributes):
-    """
-    Produce dataframe of graph node ids from objects table and specified attributes.
-    """
-    image_objects = objects[objects["imagename"] == imagename].reset_index()
-    image_objects = image_objects[attributes]
-    image_objects["vertex"] = np.arange(0, len(image_objects.index))
-    return image_objects
-
-
-def get_node_ids_3(objects, imagename, attributes, nodelabels):
-    """
-    Produce dataframe of graph node ids from objects table and specified attributes, and the original list of node labels from neigbouRhood out.
-    """
-    print("OBJECTS:\n", objects)
-    print("imagename:\n", imagename)
-    print("ATTRIBUTES\n", attributes)
-    print("NODELABELS:\n", nodelabels)
-    image_objects = (
-        objects[objects["imagename"] == imagename]
-        .set_index("object")
-        .loc[nodelabels, attributes]
-    )
-    print(image_objects)
-    image_objects["vertex"] = np.arange(
-        0, len(image_objects.index)
-    )  # image_objects.index #
-    node_ids = image_objects.astype(object)
     return node_ids
 
 
@@ -341,163 +305,7 @@ def get_cellType_node_ids(node_ids, phenotyping_column, cellType):
     return cellType_node_ids
 
 
-def count_barrier_cells(chain, BARRIER_TYPES):
-    if len(set(BARRIER_TYPES).intersection(set(chain))) > 0:
-        counts = Counter(chain)
-        x = sum([counts[cell] for cell in BARRIER_TYPES])
-    else:
-        x = 0
-    return x
 
-
-def weighted_barrier_count(chain, BARRIER_TYPES):
-    """Barrier weighting is inversely proportional to its adjacency to the target cell."""
-
-    count = 0
-    for i, elem in enumerate(chain[1:-1]):
-        weight = 1 / (i + 1)
-        if elem in BARRIER_TYPES:
-            count += weight
-    return count
-
-
-def binary_barrier_call(chain, BARRIER_TYPES):
-    """Returns 1 if barrier type is in cell chain"""
-    if len(set(BARRIER_TYPES).intersection(set(chain))) > 0:
-        barrier = 1
-    else:
-        barrier = 0
-    return barrier
-
-
-def adjacent_barrier_call(chain, BARRIER_TYPES):
-    """Returns 1 if barrier type is adjacent to target cell (first cell in chain)"""
-    inner_chain = chain[1:-1]
-
-    if len(inner_chain) > 0:
-        if inner_chain[0] in BARRIER_TYPES:
-            barrier = 1
-        else:
-            barrier = 0
-    else:
-        barrier = 0
-    return barrier
-
-
-def allpaths_path_content(
-    closest_epi,
-    shortest_paths,
-    minpath_to_epi,
-    barrier_cells=["Myofibroblasts"],
-    phenotyping_column="cellType",
-):
-    """
-    closest epi = shortest path dataframe with each row an entry corresponding to an epithelial cell at minpath_to_epi
-    distance from the source cell for the shortest paths analysis.
-
-    shortest_paths = full shortest paths table from the sssp calculation, with assigned cell types for each vertex
-
-    minpath_to_epi = minimum distance to an epithelial cell in terms of degree (i.e. hops from source cell)
-
-    barrier_cells = list, list of names corresponding to cell types to be considered barriers
-
-    returns:
-    myofibroblast_fraction_degen, the fraction of cells along the shortest paths to the N epithelial cells at
-    minpath_to_epi distance from the source cell
-    """
-
-    if minpath_to_epi > 1:  #
-        path_cells = []
-        for i in range(len(closest_epi)):
-            p = closest_epi.iloc[i, :]["predecessor"]
-            pdf = shortest_paths[shortest_paths["vertex"] == p]
-            chain = []
-
-            for j in range(minpath_to_epi - 1):
-                if pdf["predecessor"].item() > -1:
-                    pdf = shortest_paths[shortest_paths["vertex"] == p]
-                    chain.append(pdf)
-                    p = pdf["predecessor"].item()
-                    path_cells.append(pdf)
-
-            allpaths_path_content = pd.concat(path_cells)
-
-            if (
-                set(barrier_cells).intersection(
-                    set(allpaths_path_content[phenotyping_column])
-                )
-                != set()
-            ):
-                myofibroblast_fraction_degen = (
-                    allpaths_path_content[phenotyping_column]
-                    .value_counts(normalize=True)[barrier_cells]
-                    .sum()
-                )
-            else:
-                myofibroblast_fraction_degen = 0
-    else:
-        myofibroblast_fraction_degen = 0
-    return myofibroblast_fraction_degen
-
-
-def allpaths_adjacent_barrier(
-    closest_epi,
-    shortest_paths,
-    minpath_to_epi,
-    barrier_cells=["Myofibroblasts"],
-    phenotyping_column="cellType",
-):
-    """
-    closest epi = shortest path dataframe with each row an entry corresponding to an epithelial cell at minpath_to_epi
-    distance from the source cell for the shortest paths analysis.
-
-    shortest_paths = full shortest paths table from the sssp calculation, with assigned cell types for each vertex
-
-    minpath_to_epi = minimum distance to an epithelial cell in terms of degree (i.e. hops from source cell)
-
-    barrier_cells = list, list of names corresponding to cell types to be considered barriers
-
-    returns:
-    myofibroblast_fraction_degen, the fraction of cells along the shortest paths to the N epithelial cells at
-    minpath_to_epi distance from the source cell
-    """
-
-    if minpath_to_epi > 1:  #
-        path_cells = []
-        for i in range(len(closest_epi)):
-            p = closest_epi.iloc[i, :]["predecessor"]
-            pdf = shortest_paths[shortest_paths["vertex"] == p]
-            chain = []
-
-            for j in range(minpath_to_epi - 1):
-                if pdf["predecessor"].item() > -1:
-                    pdf = shortest_paths[shortest_paths["vertex"] == p]
-                    chain.append(pdf)
-                    p = pdf["predecessor"].item()
-                    path_cells.append(pdf)
-
-            allpaths_path_content = pd.concat(path_cells)
-            adjacent_cells_df = allpaths_path_content[
-                allpaths_path_content["distance"] == (minpath_to_epi - 1)
-            ]
-
-            if (
-                set(barrier_cells).intersection(
-                    set(adjacent_cells_df[phenotyping_column])
-                )
-                != set()
-            ):
-                mean_adjacent_barrier = (
-                    adjacent_cells_df[phenotyping_column]
-                    .value_counts(normalize=True)[barrier_cells]
-                    .sum()
-                )  # / len(adjacent_cells_df)
-            else:
-                mean_adjacent_barrier = 0
-
-    else:
-        mean_adjacent_barrier = 0
-    return mean_adjacent_barrier
 
 
 def permute_phenotypes(
@@ -581,3 +389,4 @@ def permute_phenotypes(
                 ].values
 
     return objects
+

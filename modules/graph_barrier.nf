@@ -57,6 +57,10 @@ process GRAPH_BARRIER {
             --objects_sep $'!{params.objects_delimiter}' \
             --barrier_types '!{params.barrier_cell_type}' \
             --phenotyping_column !{params.barrier_phenotyping_column} \
+            --radius !{params.graph_radius} \
+            --clustered_barrier true \
+            --cluster_size_cutoff !{params.cluster_area_cutoff}
+
         '''
 }
 
