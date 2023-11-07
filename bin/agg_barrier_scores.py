@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Aggregate barrier scores')
     parser.add_argument('--barrier_scores', help='Path to aggregate barrier scores for all images', required=True)
-    parser.add_argument('--delimiter', help='Delimiter for barrier scores', default='\t')
+    parser.add_argument('--delimiter', help='Delimiter for barrier scores', default=',')
     parser.add_argument('--outdir', help='Output directory', required=True, default='.')
     parser.add_argument('--image_id_col', help='Column name for image id', default='imagename')
 

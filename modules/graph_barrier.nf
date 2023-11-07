@@ -105,52 +105,12 @@ process NN_BARRIER {
         '''
 }
 
-// process NEIGHBOURHOOD_BARRIER {
-//     /*
-//     Run graph barrier scoring without spatial clustering with neighbouRhood graph construction.
-//     */
-
-//     tag "${imagename}"
-
-//     executor "slurm"
-//     time "6h"
-//     clusterOptions "--part=gpu --gres=gpu:1"
-
-//     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/unclustered_barrier", mode: params.publish_dir_mode, overwrite: params.overwrite
-
-//     input:
-//         tuple val(imagename), path(adj_list)
-//         path objects
-
-//     output:
-//         path("**/*.csv"), optional: true //, emit: ch_barrier_results_nb
-
-//     shell:
-//         '''
-//             stromal_barrier.py --graph_type !{params.graph_type}\
-//                 --imagename !{imagename}\            
-//                 --image_id_col !{params.image_id_col} \
-//                 --x_id !{params.x_id} \
-//                 --y_id !{params.y_id} \
-//                 --neighbourhood_radius 5 \
-//                 --adjacency_data_path !{adj_list} \
-//                 --root_out . \
-//                 --objects_path !{objects} \
-//                 --objects_sep $'!{params.objects_delimiter}' \
-//                 --calc_chain True \
-//                 --barrier_types Myofibroblasts \
-//                 --phenotyping_column !{params.barrier_phenotyping_column}
-//         '''
-// }
 
 process AGGREGATE_SCORES {
     /*
     Aggregate the scores from the barrier scoring.
     */
         
-    // executor "slurm"
-    // time "6h"
-    // clusterOptions "--part=gpu --gres=gpu:1"
     label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/graph/aggregated_barrier_scoring", mode: params.publish_dir_mode, overwrite: params.overwrite
@@ -165,7 +125,8 @@ process AGGREGATE_SCORES {
         '''
         agg_barrier_scores.py --outdir . \
             --barrier_scores !{scores} \
-            --delimiter $'!{params.objects_delimiter}' 
+            --delimiter ',' \
+            --image_id_col !{params.image_id_col} \
         '''
 }
 
