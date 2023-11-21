@@ -1,6 +1,8 @@
 include { SPATIAL_CLUSTERING; INTRACLUSTER_DENSITY } from '../modules/spatial_clustering.nf'
 include { GENERATE_IMAGENAMES; group_channel } from '../modules/util.nf'
 include { GRAPH_BARRIER; AGGREGATE_SCORES } from '../modules/graph_barrier.nf'
+include {NEAREST_NEIGHBOURS; COMMUNITIES} from '../modules/neighbours.nf'
+
 
 workflow SPATIAL_CLUSTERING_WF {
 
@@ -66,7 +68,10 @@ workflow CLUSTERED_BARRIER_WF {
         AGGREGATE_SCORES(barriers)
 
         all_spclusters = group_channel(SPATIAL_CLUSTERING.out.ch_all_spclusters)
-        // INTRACLUSTER_DENSITY(all_spclusters)
+
+        NEAREST_NEIGHBOURS(cell_objects)
+        COMMUNITIES(NEAREST_NEIGHBOURS.out.ch_nearest_neighbours)
+
 
 
 }
@@ -112,3 +117,21 @@ workflow CLUSTERED_NEIGHBORHOOD_WF {
 
 
 
+workflow NEIGHBOURS_WF {
+
+    /*
+    * Workflow to perform spatial clustering of cell objects and pass epithelial spatial clusters to the barrier module.
+    */
+    
+
+    take:
+        cell_objects
+
+
+    
+    main:
+
+        NEAREST_NEIGHBOURS(cell_objects)
+        COMMUNITIES(NEAREST_NEIGHBOURS.out.ch_nearest_neighbours)
+
+}

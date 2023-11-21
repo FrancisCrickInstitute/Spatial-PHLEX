@@ -1,5 +1,6 @@
 include { NEIGHBOURHOOD_GRAPH; NN_BARRIER} from '../modules/graph_barrier.nf'
 include { GENERATE_IMAGENAMES } from '../modules/util.nf'
+include {NEAREST_NEIGHBOURS} from '../modules/neighbours.nf'
 
 def generate_imagenames(file){
     def new_array = []
