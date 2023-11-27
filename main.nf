@@ -6,7 +6,7 @@ nextflow.enable.dsl=2
 *********************************************/
 
 include {NEIGHBOURHOOD_WF; NEAREST_NEIGHBOUR_WF} from './workflows/barrier.nf'
-include {SPATIAL_CLUSTERING_WF; CLUSTERED_BARRIER_WF } from './workflows/spatial.nf'
+include {SPATIAL_CLUSTERING_WF; CLUSTERED_BARRIER_WF; NEIGHBOURS_WF } from './workflows/spatial.nf'
 include { print_logo; check_params } from './modules/util.nf'
 
 project_dir = projectDir
@@ -38,13 +38,9 @@ workflow {
     
     if ((params.workflow_name == 'default') || (params.workflow_name == 'clustered_barrier')) {
         CLUSTERED_BARRIER_WF ( params.objects, ch_phenotyping)
-    }
-
-    if (params.workflow_name == 'spatial_clustering') {
+    } else if (params.workflow_name == 'spatial_clustering') {
         SPATIAL_CLUSTERING_WF ( params.objects, ch_phenotyping)
-    }
-
-    if (params.workflow_name == 'barrier_only') {
+    } else if (params.workflow_name == 'barrier_only') {
 
         if (params.graph_type == 'neighbouRhood') {
             NEIGHBOURHOOD_WF ( ch_nhood, params.neighbourhood_module_no, params.objects, params.objects_delimiter)
@@ -52,6 +48,10 @@ workflow {
         if (params.graph_type == 'nearest_neighbour') {
             NEAREST_NEIGHBOUR_WF (params.objects)
         }
+    } else if (params.workflow_name == 'neighbours') {
+        NEIGHBOURS_WF(params.objects)
+    } else {
+        println "Workflow name not recognised. Please choose from: 'default', 'clustered_barrier', 'spatial_clustering', 'barrier_only', 'neighbours'"
     }
 
 }
