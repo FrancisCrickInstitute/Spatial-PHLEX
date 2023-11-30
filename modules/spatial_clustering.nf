@@ -4,9 +4,6 @@ process SPATIAL_CLUSTERING {
     */
 
     tag "${imagename}"
-    // executor "slurm"
-	// time "30m"
-    // clusterOptions "--part=gpu --gres=gpu:1"
     label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering", mode: params.publish_dir_mode, overwrite: params.overwrite
@@ -43,7 +40,9 @@ process SPATIAL_CLUSTERING {
                 --y_coord !{params.y_coord_col} \
                 --plot_palette !{params.plot_palette} \
                 --image_id_col !{params.image_id_col} \
-                --root_outdir .
+                --root_outdir . \
+                --eps !{params.eps} \
+                --min_s !{params.min_cluster_size}
             '''
         else 
             '''
@@ -56,7 +55,9 @@ process SPATIAL_CLUSTERING {
                 --y_coord !{params.y_coord_col} \
                 --plot_palette !{params.plot_palette} \
                 --image_id_col !{params.image_id_col} \
-                --root_outdir .
+                --root_outdir . \
+                --eps !{params.eps} \
+                --min_s !{params.min_cluster_size}
             '''
 
 
@@ -67,9 +68,6 @@ process INTRACLUSTER_DENSITY {
     Calculate intracluster densities of each cell type.
     */
         
-    // executor "slurm"
-    // time "1h"
-    // clusterOptions "--part=cpu --mem=4GB"
     label 'Spatial_PHLEX_CPU'
 
     publishDir "${params.outdir}/Spatial-PHLEX/${params.release}/spatial_clustering/intracluster_density/${params.phenotyping_column}/${imagename}/${cellType}", mode: params.publish_dir_mode, overwrite: params.overwrite
