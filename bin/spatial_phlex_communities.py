@@ -107,6 +107,11 @@ def community_plot(community_centers, image_data, cellTypes, communities_type):
 
 def main(args):
 
+    if not os.path.exists(args.results_outdir):
+        os.mkdir(args.results_outdir)
+    if not os.path.exists(args.plot_outdir):
+        os.mkdir(args.plot_outdir)
+
     print('Performing community detection...')
     data = pd.read_csv(args.input)
     communities_type = args.communities_type #'majorType'
@@ -121,10 +126,6 @@ def main(args):
     community_assignments, community_centers = find_communities(frequencies, n_communities=args.n_communities)
     data['community'] = community_assignments
 
-    if not os.path.exists(args.results_outdir):
-        os.mkdir(args.results_outdir)
-    if not os.path.exists(args.plot_outdir):
-        os.mkdir(args.plot_outdir)
     print('Done!')
 
     print('Saving results...')
@@ -144,6 +145,15 @@ def main(args):
 
         # save community assignments:
         image_data.to_csv(f'{args.results_outdir}/{imagename}_community_assignments.csv', index=False)
+
+    #save frequencies:
+    frequencies[args.image_id_col] = data[args.image_id_col]
+    frequencies[args.x_id_col] = data[args.x_id_col]
+    frequencies[args.y_id_col] = data[args.y_id_col]
+    for image in frequencies[args.image_id_col].unique():
+        image_data = frequencies[frequencies[args.image_id_col] == image]
+        image_data.to_csv(f'{args.results_outdir}/{image}_nearest_neighbour_cell_frequencies.csv', index=False)
+        
     print('Done!')
 
 
